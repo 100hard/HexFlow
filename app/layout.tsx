@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import "./globals.css";
+import { CandidateLogger } from "@/components/candidate-logger";
 
 export const metadata: Metadata = {
   title: "NextFlow",
@@ -15,6 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans antialiased">
+        <CandidateLogger />
         {children}
       </body>
     </html>
