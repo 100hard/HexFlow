@@ -1,9 +1,35 @@
 "use client";
 
-import { Handle, Position } from "@xyflow/react";
-import { Info, Pencil, Trash2 } from "lucide-react";
+import { Handle, Position, useEdges, useNodes } from "@xyflow/react";
+import { Info } from "lucide-react";
 
-export function ResponseNode({ data }: { data: any }) {
+export function ResponseNode({ id, data }: { id: string; data: any }) {
+  const edges = useEdges();
+  const nodes = useNodes();
+
+  // Find all edges pointing to this response node
+  const incomingEdges = edges.filter((e) => e.target === id);
+
+  const getSourceNodeName = (sourceId: string) => {
+    const srcNode = nodes.find((n) => n.id === sourceId);
+    if (!srcNode) return "Workflow Trigger";
+    if (srcNode.id === "node-request-inputs") return "Request Inputs";
+    if (srcNode.type === "gemini") return "Gemini 3.1 Pro";
+    if (srcNode.type === "cropImage") return "Crop Image";
+    return srcNode.type || "Source Node";
+  };
+
+  const getSourceFieldName = (sourceId: string, sourceHandle: string | null | undefined) => {
+    const srcNode = nodes.find((n) => n.id === sourceId);
+    if (!srcNode) return "data";
+    if (srcNode.id === "node-request-inputs" && sourceHandle) {
+      const nodeData = srcNode.data as any;
+      const field = (nodeData?.fields || []).find((f: any) => f.id === sourceHandle);
+      return field ? field.name : sourceHandle;
+    }
+    return sourceHandle || "result";
+  };
+
   return (
     <div
       style={{
@@ -59,7 +85,7 @@ export function ResponseNode({ data }: { data: any }) {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <span style={{ fontSize: "14px", fontWeight: 500, color: "#111827" }}>
+          <span style={{ fontSize: "14px", fontWeight: 600, color: "#111827" }}>
             Response
           </span>
           <Info size={14} style={{ color: "#9ca3af", cursor: "pointer" }} />
@@ -67,16 +93,16 @@ export function ResponseNode({ data }: { data: any }) {
       </div>
 
       {/* Node Body */}
-      <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+      <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "14px" }}>
         
-        {/* Label result linked to left handle */}
+        {/* Master Input Handle */}
         <div style={{ position: "relative" }}>
           {/* Glowing Target Handle Offset left by 22px */}
           <div style={{ position: "absolute", left: "-22px", top: "50%", transform: "translateY(-50%)", zIndex: 50 }}>
             <Handle
               type="target"
               position={Position.Left}
-              id="input"
+              id="result" // matches standard target handle
               style={{
                 width: "14px",
                 height: "14px",
@@ -96,114 +122,80 @@ export function ResponseNode({ data }: { data: any }) {
           <div
             style={{
               fontSize: "12px",
-              color: "#6b7280",
-              fontWeight: 500,
+              color: "#64748b",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
               paddingLeft: "2px",
             }}
           >
-            result
+            Output Parameters
           </div>
         </div>
 
-        {/* Cards for Output Parameters */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          {/* Output 1: gpt_image_2 */}
-          <div
-            style={{
-              background: "#ffffff",
-              borderRadius: "8px",
-              padding: "12px",
-              border: "1px solid #e5e7eb",
-              display: "flex",
-              flexDirection: "column",
-              gap: "8px",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}>
-                gpt_image_2
-              </span>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <button
-                  type="button"
-                  className="nodrag"
-                  style={{ background: "none", border: 0, color: "#9ca3af", cursor: "pointer", padding: 0 }}
-                >
-                  <Pencil size={12} />
-                </button>
-                <button
-                  type="button"
-                  className="nodrag"
-                  style={{ background: "none", border: 0, color: "#9ca3af", cursor: "pointer", padding: 0 }}
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
-            </div>
+        {/* Dynamic Cards for Connected Wires */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {incomingEdges.length === 0 ? (
             <div
               style={{
-                borderRadius: "6px",
-                border: "1px solid #e5e7eb",
-                background: "#f5f5f5",
-                minHeight: "44px",
-                padding: "8px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                padding: "16px",
+                textAlign: "center",
+                fontSize: "11px",
+                color: "#94a3b8",
+                border: "1px dashed #e2e8f0",
+                borderRadius: "8px",
+                background: "#f8fafc",
+                lineHeight: "1.4",
               }}
             >
-              <span style={{ fontSize: "11px", color: "#9ca3af" }}>No output yet</span>
+              No parameters connected. Drag a wire from upstream output ports to here.
             </div>
-          </div>
-
-          {/* Output 2: seedance_2_0 */}
-          <div
-            style={{
-              background: "#ffffff",
-              borderRadius: "8px",
-              padding: "12px",
-              border: "1px solid #e5e7eb",
-              display: "flex",
-              flexDirection: "column",
-              gap: "8px",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: "13px", fontWeight: 500, color: "#374151" }}>
-                seedance_2_0
-              </span>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <button
-                  type="button"
-                  className="nodrag"
-                  style={{ background: "none", border: 0, color: "#9ca3af", cursor: "pointer", padding: 0 }}
+          ) : (
+            incomingEdges.map((edge) => {
+              const nodeName = getSourceNodeName(edge.source);
+              const fieldName = getSourceFieldName(edge.source, edge.sourceHandle);
+              return (
+                <div
+                  key={edge.id}
+                  style={{
+                    background: "#ffffff",
+                    borderRadius: "8px",
+                    padding: "10px 12px",
+                    border: "1px solid #e2e8f0",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                    boxShadow: "0 1px 2px rgba(0, 0, 0, 0.02)",
+                  }}
                 >
-                  <Pencil size={12} />
-                </button>
-                <button
-                  type="button"
-                  className="nodrag"
-                  style={{ background: "none", border: 0, color: "#9ca3af", cursor: "pointer", padding: 0 }}
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
-            </div>
-            <div
-              style={{
-                borderRadius: "6px",
-                border: "1px solid #e5e7eb",
-                background: "#f5f5f5",
-                minHeight: "44px",
-                padding: "8px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <span style={{ fontSize: "11px", color: "#9ca3af" }}>No output yet</span>
-            </div>
-          </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: "11px", fontWeight: 700, color: "#4f46e5" }}>
+                      {nodeName}
+                    </span>
+                    <span style={{ fontSize: "9px", background: "#f1f5f9", padding: "2px 6px", borderRadius: "4px", color: "#64748b" }}>
+                      linked
+                    </span>
+                  </div>
+                  <div style={{ fontSize: "12px", fontWeight: 500, color: "#334155" }}>
+                    {fieldName}
+                  </div>
+                  <div
+                    style={{
+                      borderRadius: "6px",
+                      border: "1px solid #f1f5f9",
+                      background: "#f8fafc",
+                      padding: "6px 8px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <span style={{ fontSize: "10px", color: "#94a3b8" }}>Waiting for execution run...</span>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
 
       </div>

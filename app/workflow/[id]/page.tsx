@@ -14,7 +14,7 @@ import {
   type Connection,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { ArrowLeft, Play, Loader2, Save, Cloud, Check } from "lucide-react";
+import { ArrowLeft, Play, Loader2, Save, Cloud, Check, Undo2, Redo2, Download, Upload } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useMemo, useEffect, useState } from "react";
@@ -39,6 +39,108 @@ export default function WorkflowCanvasPage() {
   // React Flow state hooks
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+
+  // Undo/Redo canvas history stacks
+  const [past, setPast] = useState<Array<{ nodes: Node[]; edges: Edge[] }>>([]);
+  const [future, setFuture] = useState<Array<{ nodes: Node[]; edges: Edge[] }>>([]);
+
+  const takeSnapshot = useCallback((currentNodes: Node[], currentEdges: Edge[]) => {
+    setPast((prev) => {
+      const snapshot = {
+        nodes: JSON.parse(JSON.stringify(currentNodes)),
+        edges: JSON.parse(JSON.stringify(currentEdges)),
+      };
+      const nextPast = [...prev, snapshot];
+      if (nextPast.length > 30) {
+        nextPast.shift();
+      }
+      return nextPast;
+    });
+    setFuture([]);
+  }, []);
+
+  const undo = useCallback(() => {
+    if (past.length === 0) return;
+
+    const previous = past[past.length - 1];
+    const newPast = past.slice(0, past.length - 1);
+
+    setPast(newPast);
+    setFuture((prev) => [
+      { nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges)) },
+      ...prev,
+    ]);
+
+    setNodes(previous.nodes);
+    setEdges(previous.edges);
+  }, [past, nodes, edges, setNodes, setEdges]);
+
+  const redo = useCallback(() => {
+    if (future.length === 0) return;
+
+    const next = future[0];
+    const newFuture = future.slice(1);
+
+    setFuture(newFuture);
+    setPast((prev) => [
+      ...prev,
+      { nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges)) },
+    ]);
+
+    setNodes(next.nodes);
+    setEdges(next.edges);
+  }, [future, nodes, edges, setNodes, setEdges]);
+
+  // Import / Export callbacks
+  const exportWorkflowToJSON = useCallback(() => {
+    const workflowData = {
+      name: workflowName,
+      nodes,
+      edges,
+    };
+    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+      JSON.stringify(workflowData, null, 2)
+    )}`;
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", jsonString);
+    downloadAnchor.setAttribute("download", `${workflowName.replace(/\s+/g, "_").toLowerCase()}_config.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  }, [workflowName, nodes, edges]);
+
+  const importWorkflowFromJSON = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target?.result as string);
+          if (data.nodes && Array.isArray(data.nodes)) {
+            takeSnapshot(nodes, edges);
+            setNodes(data.nodes);
+            if (data.edges && Array.isArray(data.edges)) {
+              setEdges(data.edges);
+            } else {
+              setEdges([]);
+            }
+            if (data.name) {
+              setWorkflowName(data.name);
+            }
+          } else {
+            alert("Invalid workflow JSON format. Missing 'nodes' array.");
+          }
+        } catch (err) {
+          console.error("Failed to parse imported workflow JSON:", err);
+          alert("Error reading JSON file.");
+        }
+      };
+      reader.readAsText(file);
+    },
+    [nodes, edges, takeSnapshot, setNodes, setEdges]
+  );
 
   // 1. Fetch live database workflow graph on mount
   useEffect(() => {
@@ -129,34 +231,63 @@ export default function WorkflowCanvasPage() {
     return () => clearTimeout(handler);
   }, [nodes, edges, loading, saveWorkflowState]);
 
+  // Node data change handler for custom nodes
+  const onNodeDataChange = useCallback(
+    (nodeId: string, newData: any) => {
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === nodeId) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                ...newData,
+              },
+            };
+          }
+          return node;
+        })
+      );
+    },
+    [setNodes]
+  );
+
   // Deletion handler for user-added nodes
   const handleDeleteNode = useCallback(
     (nodeId: string) => {
+      takeSnapshot(nodes, edges);
       setNodes((nds) => nds.filter((n) => n.id !== nodeId));
       setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
     },
-    [setNodes, setEdges]
+    [setNodes, setEdges, nodes, edges, takeSnapshot]
   );
 
-  // Dynamic mapping to inject onDelete handler into custom nodes data
+  // Dynamic mapping to inject onDelete and onChange handlers into custom nodes data
   const nodesWithDelete = useMemo(() => {
     return nodes.map((node) => {
+      const baseData = {
+        ...node.data,
+        onChange: (newData: any) => onNodeDataChange(node.id, newData),
+      };
+
       if (node.id === "node-request-inputs" || node.id === "node-response") {
-        return node;
+        return { ...node, data: baseData };
       }
+
       return {
         ...node,
         data: {
-          ...node.data,
+          ...baseData,
           onDelete: handleDeleteNode,
         },
       };
     });
-  }, [nodes, handleDeleteNode]);
+  }, [nodes, onNodeDataChange, handleDeleteNode]);
 
   // Addition handler for Gemini and Crop Image nodes
   const handleAddNode = useCallback(
     (type: "gemini" | "cropImage") => {
+      takeSnapshot(nodes, edges);
       const newId = `${type}-${Date.now()}`;
       const randomOffset = Math.floor(Math.random() * 60) - 30;
       
@@ -170,12 +301,13 @@ export default function WorkflowCanvasPage() {
       };
       setNodes((nds) => [...nds, newNode]);
     },
-    [setNodes]
+    [setNodes, nodes, edges, takeSnapshot]
   );
 
   // Connection handler with visual color-coded stroke styling matching source handle type
   const onConnect = useCallback(
     (connection: Connection) => {
+      takeSnapshot(nodes, edges);
       let strokeColor = "#818cf8"; // Animated Purple/Indigo by default
 
       const sourceHandle = connection.sourceHandle || "";
@@ -205,7 +337,7 @@ export default function WorkflowCanvasPage() {
 
       setEdges((eds) => addEdge(newEdge, eds));
     },
-    [setEdges]
+    [setEdges, nodes, edges, takeSnapshot]
   );
 
   // Type-safe connection validation rules
@@ -235,6 +367,33 @@ export default function WorkflowCanvasPage() {
     },
     []
   );
+
+  // Wrap standard React Flow callbacks to intercept and save history snapshots on keyboard deletions
+  const onNodesChangeWrapper = useCallback(
+    (changes: any) => {
+      const hasRemoval = changes.some((c: any) => c.type === "remove");
+      if (hasRemoval) {
+        takeSnapshot(nodes, edges);
+      }
+      onNodesChange(changes);
+    },
+    [onNodesChange, nodes, edges, takeSnapshot]
+  );
+
+  const onEdgesChangeWrapper = useCallback(
+    (changes: any) => {
+      const hasRemoval = changes.some((c: any) => c.type === "remove");
+      if (hasRemoval) {
+        takeSnapshot(nodes, edges);
+      }
+      onEdgesChange(changes);
+    },
+    [onEdgesChange, nodes, edges, takeSnapshot]
+  );
+
+  const onNodeDragStart = useCallback(() => {
+    takeSnapshot(nodes, edges);
+  }, [nodes, edges, takeSnapshot]);
 
   // Register all node templates
   const nodeTypes = {
@@ -340,6 +499,120 @@ export default function WorkflowCanvasPage() {
 
           {/* Right Side: Action Run Play button */}
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            
+            {/* Undo / Redo Controls */}
+            <div style={{ display: "flex", alignItems: "center", border: "1px solid #e5e7eb", borderRadius: "6px", overflow: "hidden", background: "#ffffff" }}>
+              <button
+                onClick={undo}
+                disabled={past.length === 0}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "32px",
+                  height: "32px",
+                  border: 0,
+                  background: "transparent",
+                  color: past.length === 0 ? "#cbd5e1" : "#334155",
+                  cursor: past.length === 0 ? "not-allowed" : "pointer",
+                  transition: "background 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  if (past.length > 0) e.currentTarget.style.background = "#f8fafc";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                }}
+                title="Undo (Ctrl+Z)"
+              >
+                <Undo2 size={13} />
+              </button>
+              <div style={{ width: "1px", height: "16px", background: "#e2e8f0" }} />
+              <button
+                onClick={redo}
+                disabled={future.length === 0}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "32px",
+                  height: "32px",
+                  border: 0,
+                  background: "transparent",
+                  color: future.length === 0 ? "#cbd5e1" : "#334155",
+                  cursor: future.length === 0 ? "not-allowed" : "pointer",
+                  transition: "background 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  if (future.length > 0) e.currentTarget.style.background = "#f8fafc";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                }}
+                title="Redo (Ctrl+Y)"
+              >
+                <Redo2 size={13} />
+              </button>
+            </div>
+
+            {/* Import / Export Controls */}
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <button
+                onClick={exportWorkflowToJSON}
+                style={{
+                  display: "inline-flex",
+                  height: "32px",
+                  alignItems: "center",
+                  gap: "6px",
+                  borderRadius: "6px",
+                  border: "1px solid #e2e8f0",
+                  background: "#ffffff",
+                  padding: "0 10px",
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  color: "#334155",
+                  cursor: "pointer",
+                  transition: "background 0.15s ease",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "#ffffff")}
+                title="Export configuration JSON"
+              >
+                <Download size={12} />
+                <span>Export</span>
+              </button>
+
+              <label
+                style={{
+                  display: "inline-flex",
+                  height: "32px",
+                  alignItems: "center",
+                  gap: "6px",
+                  borderRadius: "6px",
+                  border: "1px solid #e2e8f0",
+                  background: "#ffffff",
+                  padding: "0 10px",
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  color: "#334155",
+                  cursor: "pointer",
+                  transition: "background 0.15s ease",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "#ffffff")}
+                title="Import configuration JSON"
+              >
+                <Upload size={12} />
+                <span>Import</span>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={importWorkflowFromJSON}
+                  style={{ display: "none" }}
+                />
+              </label>
+            </div>
+
             <button
               onClick={() => saveWorkflowState(nodes, edges)}
               style={{
@@ -390,10 +663,11 @@ export default function WorkflowCanvasPage() {
           <ReactFlow
             nodes={nodesWithDelete}
             edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
+            onNodesChange={onNodesChangeWrapper}
+            onEdgesChange={onEdgesChangeWrapper}
             onConnect={onConnect}
             isValidConnection={isValidConnection}
+            onNodeDragStart={onNodeDragStart}
             nodeTypes={nodeTypes}
             fitView={false}
             defaultViewport={{ x: 100, y: 80, zoom: 0.58 }}
