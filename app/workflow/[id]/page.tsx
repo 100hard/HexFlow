@@ -55,9 +55,16 @@ export default function WorkflowCanvasPage() {
           if (createRes.ok) {
             const clonedWf = await createRes.json();
             router.replace(`/workflow/${clonedWf.id}`);
+            return;
+          } else {
+            console.error("Cloning template response not ok:", createRes.status);
+            router.push("/");
           }
         } catch (err) {
           console.error("Cloning template error:", err);
+          router.push("/");
+        } finally {
+          setLoading(false);
         }
         return;
       }
