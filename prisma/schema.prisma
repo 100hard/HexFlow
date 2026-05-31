@@ -1,0 +1,42 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String     @id // Clerk User ID
+  email     String     @unique
+  workflows Workflow[]
+  runs      Run[]
+}
+
+model Workflow {
+  id        String   @id @default(uuid())
+  name      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodes     Json     // Array of React Flow nodes
+  edges     Json     // Array of React Flow edges
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  runs      Run[]
+}
+
+model Run {
+  id         String   @id @default(uuid())
+  workflowId String
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status     String   // "SUCCESS" | "FAILED" | "PARTIAL" | "RUNNING"
+  scope      String   // "FULL" | "PARTIAL" | "SINGLE"
+  duration   Float    // in seconds
+  nodesState Json     // Per-node status, inputs used, outputs, execution times, error logs
+  createdAt  DateTime @default(now())
+}
