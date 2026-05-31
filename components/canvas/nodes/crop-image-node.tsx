@@ -27,10 +27,13 @@ export function CropImageNode({ id, data, onDelete }: { id: string; data: any; o
     <div
       style={{
         background: "#ffffff",
-        border: "1px solid #e2e8f0",
+        border: data?.executing ? "2px solid #6366f1" : "1px solid #e2e8f0",
         borderRadius: "12px",
-        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+        boxShadow: data?.executing 
+          ? "0 0 0 4px rgba(99, 102, 241, 0.5), 0 10px 30px rgba(99, 102, 241, 0.3)" 
+          : "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
         width: "380px",
+        transition: "all 0.3s ease-in-out",
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         overflow: "visible", // crucial for absolute handles and tooltips
         position: "relative",

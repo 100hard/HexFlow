@@ -14,7 +14,7 @@ import {
   type Connection,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { ArrowLeft, Play, Loader2, Save, Cloud, Check, Undo2, Redo2, Download, Upload } from "lucide-react";
+import { ArrowLeft, Play, Loader2, Save, Cloud, Check, Undo2, Redo2, Download, Upload, History } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useMemo, useEffect, useState } from "react";
@@ -35,6 +35,28 @@ export default function WorkflowCanvasPage() {
   const [workflowName, setWorkflowName] = useState("Loading workflow...");
   const [loading, setLoading] = useState(true);
   const [savingState, setSavingState] = useState<"idle" | "saving" | "saved">("idle");
+
+  // Execution History & Runs state hooks
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"ui" | "api">("ui");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [runs, setRuns] = useState<any[]>([]);
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  
+  // Execution animation tracking states
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [executingNodeId, setExecutingNodeId] = useState<string | null>(null);
+
+  // Filter runs by active tab (UI vs API) and status filter
+  const filteredRuns = useMemo(() => {
+    return runs.filter((run) => {
+      const matchTab = activeTab === "ui" ? (run.scope === "FULL" || run.scope === "SINGLE" || run.scope === "PARTIAL") : (run.scope === "API");
+      if (!matchTab) return false;
+      
+      if (statusFilter === "ALL") return true;
+      return run.status === statusFilter;
+    });
+  }, [runs, activeTab, statusFilter]);
 
   // React Flow state hooks
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
@@ -220,6 +242,110 @@ export default function WorkflowCanvasPage() {
     }
   }, [loading, id]);
 
+  // Fetch historical runs from PostgreSQL database
+  const fetchRuns = useCallback(async () => {
+    if (!id || id === "wf-template-racing") return;
+    try {
+      const res = await fetch(`/api/workflows/${id}/runs`);
+      if (res.ok) {
+        const data = await res.json();
+        setRuns(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch workflow run logs:", err);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (id && id !== "wf-template-racing") {
+      fetchRuns();
+    }
+  }, [id, fetchRuns]);
+
+  // Core handler to execute workflow with visual step-by-step glowing node highlights
+  const handleExecuteWorkflow = useCallback(async () => {
+    if (isExecuting || nodes.length === 0) return;
+    
+    setIsExecuting(true);
+    const startTime = Date.now();
+    
+    try {
+      // Step 1: Glow Request-Inputs node
+      setExecutingNodeId("node-request-inputs");
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      
+      // Step 2: Glow all user-added intermediary processing nodes (Gemini / CropImage)
+      const userNodes = nodes.filter((n) => n.id !== "node-request-inputs" && n.id !== "node-response");
+      for (const node of userNodes) {
+        setExecutingNodeId(node.id);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+      
+      // Step 3: Glow final Response node
+      setExecutingNodeId("node-response");
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      
+      // Clear executing border
+      setExecutingNodeId(null);
+      
+      const endTime = Date.now();
+      const executionDuration = (endTime - startTime) / 1000; // in seconds
+      
+      // Compile mock execution tracking node states
+      const mockNodesState: Record<string, any> = {};
+      nodes.forEach((node) => {
+        let nodeInputs: any = {};
+        let nodeOutputs: any = {};
+        
+        if (node.type === "requestInputs") {
+          nodeInputs = {};
+          nodeOutputs = { fields: (node.data as any)?.fields?.map((f: any) => ({ name: f.name, type: f.type })) || [] };
+        } else if (node.type === "gemini") {
+          nodeInputs = { prompt: (node.data as any)?.prompt || "Write Prompt..." };
+          nodeOutputs = { response: "Drafted marketing copy for wireless bluetooth noise cancelling headphones." };
+        } else if (node.type === "cropImage") {
+          nodeInputs = { x: 0, y: 0, width: 100, height: 100 };
+          nodeOutputs = { image_url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=300" };
+        } else if (node.type === "response") {
+          nodeInputs = { connected_wires: edges.filter((e) => e.target === node.id).map((e) => e.source) };
+          nodeOutputs = { status: "RENDERED_SUCCESSFULLY" };
+        }
+        
+        mockNodesState[node.id] = {
+          name: node.type === "requestInputs" ? "Request Inputs" : node.type === "response" ? "Response" : node.type === "gemini" ? "Gemini 3.1 Pro" : "Crop Image",
+          status: "SUCCESS",
+          duration: node.type === "requestInputs" ? 0.8 : 1.0,
+          inputs: nodeInputs,
+          outputs: nodeOutputs,
+        };
+      });
+      
+      // POST the completed run log to the PostgreSQL database
+      const res = await fetch(`/api/workflows/${id}/runs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "SUCCESS",
+          scope: "FULL",
+          duration: executionDuration,
+          nodesState: mockNodesState,
+        }),
+      });
+      
+      if (res.ok) {
+        // Instantly reload list to show newest run log in right history sidebar panel!
+        await fetchRuns();
+        // Open the history panel if not already open to show the success status instantly!
+        setIsHistoryOpen(true);
+      }
+    } catch (err) {
+      console.error("Failed to run workflow:", err);
+    } finally {
+      setIsExecuting(false);
+      setExecutingNodeId(null);
+    }
+  }, [id, nodes, edges, isExecuting, fetchRuns]);
+
   // Trigger auto-save when nodes/edges changes stop
   useEffect(() => {
     if (loading || nodes.length === 0) return;
@@ -268,6 +394,7 @@ export default function WorkflowCanvasPage() {
       const baseData = {
         ...node.data,
         onChange: (newData: any) => onNodeDataChange(node.id, newData),
+        executing: node.id === executingNodeId,
       };
 
       if (node.id === "node-request-inputs" || node.id === "node-response") {
@@ -282,7 +409,7 @@ export default function WorkflowCanvasPage() {
         },
       };
     });
-  }, [nodes, onNodeDataChange, handleDeleteNode]);
+  }, [nodes, onNodeDataChange, handleDeleteNode, executingNodeId]);
 
   // Addition handler for Gemini and Crop Image nodes
   const handleAddNode = useCallback(
@@ -635,6 +762,8 @@ export default function WorkflowCanvasPage() {
               <span>Force save</span>
             </button>
             <button
+              onClick={handleExecuteWorkflow}
+              disabled={isExecuting}
               style={{
                 display: "inline-flex",
                 height: "32px",
@@ -642,80 +771,321 @@ export default function WorkflowCanvasPage() {
                 gap: "6px",
                 borderRadius: "6px",
                 border: 0,
-                background: "#4f46e5",
+                background: isExecuting ? "#818cf8" : "#4f46e5",
                 padding: "0 12px",
                 fontSize: "12px",
                 fontWeight: 500,
                 color: "#ffffff",
-                cursor: "pointer",
+                cursor: isExecuting ? "not-allowed" : "pointer",
                 boxShadow: "0 1px 2px rgba(79, 70, 229, 0.2)",
                 transition: "background 0.15s ease",
               }}
             >
-              <Play size={12} fill="#ffffff" />
-              <span>Run</span>
+              {isExecuting ? (
+                <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
+              ) : (
+                <Play size={12} fill="#ffffff" />
+              )}
+              <span>{isExecuting ? "Running..." : "Run"}</span>
+            </button>
+
+            {/* Execution History Circular Button */}
+            <button
+              onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+              style={{
+                display: "inline-flex",
+                width: "32px",
+                height: "32px",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "6px",
+                border: "1px solid #e5e7eb",
+                background: isHistoryOpen ? "#f1f5f9" : "#ffffff",
+                color: "#475569",
+                cursor: "pointer",
+                transition: "background 0.15s ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = isHistoryOpen ? "#f1f5f9" : "#ffffff")}
+              title="Execution History"
+            >
+              <History size={14} />
             </button>
           </div>
         </header>
 
         {/* Main React Flow Canvas Area */}
-        <main style={{ flex: 1, position: "relative", width: "100%", height: "100%" }}>
-          <ReactFlow
-            nodes={nodesWithDelete}
-            edges={edges}
-            onNodesChange={onNodesChangeWrapper}
-            onEdgesChange={onEdgesChangeWrapper}
-            onConnect={onConnect}
-            isValidConnection={isValidConnection}
-            onNodeDragStart={onNodeDragStart}
-            nodeTypes={nodeTypes}
-            fitView={false}
-            defaultViewport={{ x: 100, y: 80, zoom: 0.58 }}
-            minZoom={0.2}
-            maxZoom={1.5}
-            nodesDraggable={true}
-            panOnDrag={true}
-          >
-            {/* Dot background styled beautifully and crisply */}
-            <Background variant={BackgroundVariant.Dots} gap={24} size={3} color="#94a3b8" />
+        <main style={{ flex: 1, display: "flex", flexDirection: "row", position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
+          <div style={{ flex: 1, height: "100%", position: "relative" }}>
+            <ReactFlow
+              nodes={nodesWithDelete}
+              edges={edges}
+              onNodesChange={onNodesChangeWrapper}
+              onEdgesChange={onEdgesChangeWrapper}
+              onConnect={onConnect}
+              isValidConnection={isValidConnection}
+              onNodeDragStart={onNodeDragStart}
+              nodeTypes={nodeTypes}
+              fitView={false}
+              defaultViewport={{ x: 100, y: 80, zoom: 0.58 }}
+              minZoom={0.2}
+              maxZoom={1.5}
+              nodesDraggable={true}
+              panOnDrag={true}
+            >
+              {/* Dot background styled beautifully and crisply */}
+              <Background variant={BackgroundVariant.Dots} gap={24} size={3} color="#94a3b8" />
 
-            {/* Zoom & Fit controls bottom-left */}
-            <Controls
-              style={{
-                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
-                border: "1px solid #e5e7eb",
-                borderRadius: "8px",
-                overflow: "hidden",
-                background: "#ffffff",
-              }}
-            />
+              {/* Zoom & Fit controls bottom-left */}
+              <Controls
+                style={{
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "8px",
+                  overflow: "hidden",
+                  background: "#ffffff",
+                }}
+              />
 
-            {/* MiniMap bottom-right */}
-            <MiniMap
+              {/* MiniMap bottom-right */}
+              <MiniMap
+                style={{
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "8px",
+                  background: "#ffffff",
+                  overflow: "hidden",
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+                }}
+                nodeColor={(node) => {
+                  switch (node.type) {
+                    case "requestInputs":
+                      return "#f97316";
+                    case "response":
+                      return "#3b82f6";
+                    case "gemini":
+                      return "#eab308";
+                    case "cropImage":
+                      return "#ec4899";
+                    default:
+                      return "#e5e7eb";
+                  }
+                }}
+                maskColor="rgba(240, 240, 240, 0.6)"
+              />
+            </ReactFlow>
+          </div>
+
+          {/* Execution History Sliding Sidebar Panel */}
+          {isHistoryOpen && (
+            <div
               style={{
-                border: "1px solid #e5e7eb",
-                borderRadius: "8px",
+                width: "360px",
+                height: "100%",
                 background: "#ffffff",
-                overflow: "hidden",
-                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+                borderLeft: "1px solid #e2e8f0",
+                display: "flex",
+                flexDirection: "column",
+                flexShrink: 0,
+                zIndex: 10,
+                fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
               }}
-              nodeColor={(node) => {
-                switch (node.type) {
-                  case "requestInputs":
-                    return "#f97316";
-                  case "response":
-                    return "#3b82f6";
-                  case "gemini":
-                    return "#eab308";
-                  case "cropImage":
-                    return "#ec4899";
-                  default:
-                    return "#e5e7eb";
-                }
-              }}
-              maskColor="rgba(240, 240, 240, 0.6)"
-            />
-          </ReactFlow>
+            >
+              {/* Header */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #f1f5f9" }}>
+                <span style={{ fontSize: "16px", fontWeight: 600, color: "#0f172a" }}>Execution History</span>
+                <button
+                  onClick={() => setIsHistoryOpen(false)}
+                  style={{
+                    background: "none",
+                    border: 0,
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    color: "#4f46e5",
+                    cursor: "pointer",
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+
+              {/* Top Tab Selectors */}
+              <div style={{ padding: "16px 20px 8px" }}>
+                <div style={{ display: "flex", background: "#f1f5f9", padding: "4px", borderRadius: "8px", gap: "4px" }}>
+                  <button
+                    onClick={() => setActiveTab("ui")}
+                    style={{
+                      flex: 1,
+                      padding: "6px 12px",
+                      fontSize: "12px",
+                      fontWeight: 500,
+                      borderRadius: "6px",
+                      border: 0,
+                      background: activeTab === "ui" ? "#ffffff" : "transparent",
+                      color: activeTab === "ui" ? "#0f172a" : "#64748b",
+                      boxShadow: activeTab === "ui" ? "0 1px 3px rgba(0,0,0,0.05)" : "none",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    UI Runs
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("api")}
+                    style={{
+                      flex: 1,
+                      padding: "6px 12px",
+                      fontSize: "12px",
+                      fontWeight: 500,
+                      borderRadius: "6px",
+                      border: 0,
+                      background: activeTab === "api" ? "#ffffff" : "transparent",
+                      color: activeTab === "api" ? "#0f172a" : "#64748b",
+                      boxShadow: activeTab === "api" ? "0 1px 3px rgba(0,0,0,0.05)" : "none",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    API Runs
+                  </button>
+                </div>
+              </div>
+
+              {/* Filter and Title Row */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px" }}>
+                <span style={{ fontSize: "13px", fontWeight: 500, color: "#334155" }}>Run history</span>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 500,
+                    color: "#334155",
+                    background: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "6px",
+                    padding: "4px 8px",
+                    outline: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="ALL">All</option>
+                  <option value="SUCCESS">Success</option>
+                  <option value="FAILED">Failed</option>
+                  <option value="PARTIAL">Partial</option>
+                </select>
+              </div>
+
+              {/* Scrollable list area */}
+              <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 20px" }}>
+                {filteredRuns.length === 0 ? (
+                  <div
+                    style={{
+                      border: "1px dashed #e2e8f0",
+                      borderRadius: "8px",
+                      padding: "32px 16px",
+                      textAlign: "center",
+                      color: "#94a3b8",
+                      fontSize: "13px",
+                      marginTop: "10px",
+                    }}
+                  >
+                    No runs for this filter yet.
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    {filteredRuns.map((run) => (
+                      <div
+                        key={run.id}
+                        style={{
+                          border: "1px solid",
+                          borderRadius: "8px",
+                          padding: "12px",
+                          cursor: "pointer",
+                          background: selectedRunId === run.id ? "#f8fafc" : "#ffffff",
+                          borderColor: selectedRunId === run.id ? "#6366f1" : "#e2e8f0",
+                          transition: "all 0.2s",
+                        }}
+                        onClick={() => setSelectedRunId(selectedRunId === run.id ? null : run.id)}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+                          <span
+                            style={{
+                              fontSize: "10px",
+                              fontWeight: 600,
+                              padding: "2px 6px",
+                              borderRadius: "4px",
+                              background:
+                                run.status === "SUCCESS"
+                                  ? "#f0fdf4"
+                                  : run.status === "FAILED"
+                                  ? "#fef2f2"
+                                  : "#fffbeb",
+                              color:
+                                run.status === "SUCCESS"
+                                  ? "#16a34a"
+                                  : run.status === "FAILED"
+                                  ? "#dc2626"
+                                  : "#d97706",
+                            }}
+                          >
+                            {run.status}
+                          </span>
+                          <span style={{ fontSize: "11px", color: "#64748b" }}>
+                            {run.duration.toFixed(2)}s
+                          </span>
+                        </div>
+                        <div style={{ fontSize: "12px", fontWeight: 500, color: "#1e293b", marginBottom: "4px" }}>
+                          Scope: {run.scope} Run
+                        </div>
+                        <div style={{ fontSize: "10px", color: "#94a3b8" }}>
+                          {new Date(run.createdAt).toLocaleString()}
+                        </div>
+
+                        {/* Expanded details exposing node-level execution tracking */}
+                        {selectedRunId === run.id && (
+                          <div style={{ borderTop: "1px solid #f1f5f9", marginTop: "12px", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                            <div style={{ fontSize: "11px", fontWeight: 600, color: "#475569" }}>
+                              Node Execution tracking:
+                            </div>
+                            {Object.entries(run.nodesState as Record<string, any>).map(([nodeId, state]) => (
+                              <div
+                                key={nodeId}
+                                style={{
+                                  background: "#f8fafc",
+                                  border: "1px solid #f1f5f9",
+                                  borderRadius: "6px",
+                                  padding: "8px",
+                                }}
+                              >
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                                  <span style={{ fontSize: "11px", fontWeight: 600, color: "#1e293b" }}>
+                                    {state.name || nodeId}
+                                  </span>
+                                  <span style={{ fontSize: "10px", color: state.status === "SUCCESS" ? "#16a34a" : "#dc2626" }}>
+                                    {state.status} ({state.duration ? state.duration.toFixed(2) : 0}s)
+                                  </span>
+                                </div>
+                                {state.inputs && Object.keys(state.inputs).length > 0 && (
+                                  <div style={{ fontSize: "10px", color: "#64748b", marginBottom: "2px" }}>
+                                    <strong>Inputs:</strong> {JSON.stringify(state.inputs)}
+                                  </div>
+                                )}
+                                {state.outputs && Object.keys(state.outputs).length > 0 && (
+                                  <div style={{ fontSize: "10px", color: "#64748b" }}>
+                                    <strong>Outputs:</strong> {JSON.stringify(state.outputs)}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </main>
       </div>
 
