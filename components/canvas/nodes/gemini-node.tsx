@@ -1,6 +1,6 @@
 "use client";
 
-import { Handle, Position } from "@xyflow/react";
+import { Handle, Position, useEdges } from "@xyflow/react";
 import { Coins, Info, Play, RotateCcw, Trash2, Upload, ChevronDown, Maximize2, Plus } from "lucide-react";
 import { useState } from "react";
 
@@ -9,6 +9,18 @@ export function GeminiNode({ id, data, onDelete }: { id: string; data: any; onDe
   const [systemPrompt, setSystemPrompt] = useState(data.systemPrompt || "");
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Dynamic connected handles tracker
+  const edges = useEdges();
+  const isConnected = (handleId: string) => {
+    return edges.some((edge) => edge.target === id && edge.targetHandle === handleId);
+  };
+
+  const promptConnected = isConnected("prompt");
+  const systemPromptConnected = isConnected("system_prompt");
+  const imageConnected = isConnected("image_urls");
+  const videoConnected = isConnected("video_urls");
+  const audioConnected = isConnected("audio_urls");
 
   return (
     <div
@@ -276,7 +288,8 @@ export function GeminiNode({ id, data, onDelete }: { id: string; data: any; onDe
           {/* Input Textarea Area */}
           <div style={{ position: "relative" }}>
             <textarea
-              value={prompt}
+              value={promptConnected ? "Linked to workspace wire..." : prompt}
+              disabled={promptConnected}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Enter your prompt..."
               rows={3}
@@ -284,38 +297,41 @@ export function GeminiNode({ id, data, onDelete }: { id: string; data: any; onDe
               style={{
                 width: "100%",
                 borderRadius: "8px",
-                border: "1px solid #e5e7eb",
-                background: "#f5f5f5",
+                border: promptConnected ? "1px solid #cbd5e1" : "1px solid #e5e7eb",
+                background: promptConnected ? "#e2e8f0" : "#f5f5f5",
+                color: promptConnected ? "#94a3b8" : "#111827",
+                cursor: promptConnected ? "not-allowed" : "text",
                 padding: "12px",
                 fontSize: "14px",
-                color: "#111827",
                 outline: "none",
                 resize: "vertical",
                 fontFamily: "inherit",
               }}
             />
             {/* Expand maximize button absolute positioned */}
-            <button
-              type="button"
-              className="nodrag"
-              style={{
-                position: "absolute",
-                bottom: "8px",
-                right: "8px",
-                width: "24px",
-                height: "24px",
-                background: "rgba(229, 231, 235, 0.8)",
-                border: 0,
-                borderRadius: "6px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#6b7280",
-                cursor: "pointer",
-              }}
-            >
-              <Maximize2 size={12} />
-            </button>
+            {!promptConnected && (
+              <button
+                type="button"
+                className="nodrag"
+                style={{
+                  position: "absolute",
+                  bottom: "8px",
+                  right: "8px",
+                  width: "24px",
+                  height: "24px",
+                  background: "rgba(229, 231, 235, 0.8)",
+                  border: 0,
+                  borderRadius: "6px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#6b7280",
+                  cursor: "pointer",
+                }}
+              >
+                <Maximize2 size={12} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -374,7 +390,8 @@ export function GeminiNode({ id, data, onDelete }: { id: string; data: any; onDe
           {/* Input Textarea Area */}
           <div style={{ position: "relative" }}>
             <textarea
-              value={systemPrompt}
+              value={systemPromptConnected ? "Linked to workspace wire..." : systemPrompt}
+              disabled={systemPromptConnected}
               onChange={(e) => setSystemPrompt(e.target.value)}
               placeholder="You are a helpful assistant..."
               rows={3}
@@ -382,38 +399,41 @@ export function GeminiNode({ id, data, onDelete }: { id: string; data: any; onDe
               style={{
                 width: "100%",
                 borderRadius: "8px",
-                border: "1px solid #e5e7eb",
-                background: "#f5f5f5",
+                border: systemPromptConnected ? "1px solid #cbd5e1" : "1px solid #e5e7eb",
+                background: systemPromptConnected ? "#e2e8f0" : "#f5f5f5",
+                color: systemPromptConnected ? "#94a3b8" : "#111827",
+                cursor: systemPromptConnected ? "not-allowed" : "text",
                 padding: "12px",
                 fontSize: "14px",
-                color: "#111827",
                 outline: "none",
                 resize: "vertical",
                 fontFamily: "inherit",
               }}
             />
             {/* Expand maximize button absolute positioned */}
-            <button
-              type="button"
-              className="nodrag"
-              style={{
-                position: "absolute",
-                bottom: "8px",
-                right: "8px",
-                width: "24px",
-                height: "24px",
-                background: "rgba(229, 231, 235, 0.8)",
-                border: 0,
-                borderRadius: "6px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#6b7280",
-                cursor: "pointer",
-              }}
-            >
-              <Maximize2 size={12} />
-            </button>
+            {!systemPromptConnected && (
+              <button
+                type="button"
+                className="nodrag"
+                style={{
+                  position: "absolute",
+                  bottom: "8px",
+                  right: "8px",
+                  width: "24px",
+                  height: "24px",
+                  background: "rgba(229, 231, 235, 0.8)",
+                  border: 0,
+                  borderRadius: "6px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#6b7280",
+                  cursor: "pointer",
+                }}
+              >
+                <Maximize2 size={12} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -448,6 +468,7 @@ export function GeminiNode({ id, data, onDelete }: { id: string; data: any; onDe
             <div style={{ flex: 1 }}>
               <button
                 type="button"
+                disabled={imageConnected}
                 className="nodrag"
                 style={{
                   width: "100%",
@@ -456,16 +477,16 @@ export function GeminiNode({ id, data, onDelete }: { id: string; data: any; onDe
                   justifyContent: "center",
                   gap: "8px",
                   borderRadius: "8px",
-                  border: "1px dashed #d1d5db",
-                  background: "#f5f5f5",
+                  border: imageConnected ? "1px dashed #cbd5e1" : "1px dashed #d1d5db",
+                  background: imageConnected ? "#e2e8f0" : "#f5f5f5",
                   padding: "10px",
                   fontSize: "12px",
-                  color: "#6b7280",
-                  cursor: "pointer",
+                  color: imageConnected ? "#94a3b8" : "#6b7280",
+                  cursor: imageConnected ? "not-allowed" : "pointer",
                 }}
               >
                 <Upload size={14} />
-                <span>Upload image</span>
+                <span>{imageConnected ? "Linked via handle" : "Upload image"}</span>
               </button>
               <div style={{ display: "flex", alignItems: "center", gap: "4px", marginTop: "4px" }}>
                 <span style={{ display: "inline-flex", cursor: "pointer" }}>
@@ -528,6 +549,7 @@ export function GeminiNode({ id, data, onDelete }: { id: string; data: any; onDe
             <div style={{ flex: 1 }}>
               <button
                 type="button"
+                disabled={videoConnected}
                 className="nodrag"
                 style={{
                   width: "100%",
@@ -536,16 +558,16 @@ export function GeminiNode({ id, data, onDelete }: { id: string; data: any; onDe
                   justifyContent: "center",
                   gap: "8px",
                   borderRadius: "8px",
-                  border: "1px dashed #d1d5db",
-                  background: "#f5f5f5",
+                  border: videoConnected ? "1px dashed #cbd5e1" : "1px dashed #d1d5db",
+                  background: videoConnected ? "#e2e8f0" : "#f5f5f5",
                   padding: "10px",
                   fontSize: "12px",
-                  color: "#6b7280",
-                  cursor: "pointer",
+                  color: videoConnected ? "#94a3b8" : "#6b7280",
+                  cursor: videoConnected ? "not-allowed" : "pointer",
                 }}
               >
                 <Upload size={14} />
-                <span>Upload video</span>
+                <span>{videoConnected ? "Linked via handle" : "Upload video"}</span>
               </button>
             </div>
             <button
@@ -602,6 +624,7 @@ export function GeminiNode({ id, data, onDelete }: { id: string; data: any; onDe
             <div style={{ flex: 1 }}>
               <button
                 type="button"
+                disabled={audioConnected}
                 className="nodrag"
                 style={{
                   width: "100%",
@@ -610,16 +633,16 @@ export function GeminiNode({ id, data, onDelete }: { id: string; data: any; onDe
                   justifyContent: "center",
                   gap: "8px",
                   borderRadius: "8px",
-                  border: "1px dashed #d1d5db",
-                  background: "#f5f5f5",
+                  border: audioConnected ? "1px dashed #cbd5e1" : "1px dashed #d1d5db",
+                  background: audioConnected ? "#e2e8f0" : "#f5f5f5",
                   padding: "10px",
                   fontSize: "12px",
-                  color: "#6b7280",
-                  cursor: "pointer",
+                  color: audioConnected ? "#94a3b8" : "#6b7280",
+                  cursor: audioConnected ? "not-allowed" : "pointer",
                 }}
               >
                 <Upload size={14} />
-                <span>Upload audio</span>
+                <span>{audioConnected ? "Linked via handle" : "Upload audio"}</span>
               </button>
             </div>
             <button

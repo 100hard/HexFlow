@@ -1,6 +1,6 @@
 "use client";
 
-import { Handle, Position } from "@xyflow/react";
+import { Handle, Position, useEdges } from "@xyflow/react";
 import { Coins, Info, Play, RotateCcw, Trash2, Upload, Plus, Maximize2 } from "lucide-react";
 import { useState } from "react";
 
@@ -10,6 +10,18 @@ export function CropImageNode({ id, data, onDelete }: { id: string; data: any; o
   const [width, setWidth] = useState(100);
   const [height, setHeight] = useState(100);
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
+
+  // Dynamic connected handles tracker
+  const edges = useEdges();
+  const isConnected = (handleId: string) => {
+    return edges.some((edge) => edge.target === id && edge.targetHandle === handleId);
+  };
+
+  const imageConnected = isConnected("image");
+  const xPositionConnected = isConnected("xPosition");
+  const yPositionConnected = isConnected("yPosition");
+  const widthConnected = isConnected("width");
+  const heightConnected = isConnected("height");
 
   return (
     <div
@@ -258,6 +270,7 @@ export function CropImageNode({ id, data, onDelete }: { id: string; data: any; o
             <div style={{ flex: 1 }}>
               <button
                 type="button"
+                disabled={imageConnected}
                 className="nodrag"
                 style={{
                   width: "100%",
@@ -266,16 +279,16 @@ export function CropImageNode({ id, data, onDelete }: { id: string; data: any; o
                   justifyContent: "center",
                   gap: "8px",
                   borderRadius: "8px",
-                  border: "1px dashed #d1d5db",
-                  background: "#f5f5f5",
+                  border: imageConnected ? "1px dashed #cbd5e1" : "1px dashed #d1d5db",
+                  background: imageConnected ? "#e2e8f0" : "#f5f5f5",
                   padding: "10px",
                   fontSize: "12px",
-                  color: "#6b7280",
-                  cursor: "pointer",
+                  color: imageConnected ? "#94a3b8" : "#6b7280",
+                  cursor: imageConnected ? "not-allowed" : "pointer",
                 }}
               >
                 <Upload size={14} />
-                <span>Upload image</span>
+                <span>{imageConnected ? "Linked via handle" : "Upload image"}</span>
               </button>
             </div>
             <button
@@ -326,37 +339,47 @@ export function CropImageNode({ id, data, onDelete }: { id: string; data: any; o
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span style={{ width: "100px", fontSize: "12px", color: "#6b7280", flexShrink: 0 }}>
+            <span style={{ width: "100px", fontSize: "12px", color: xPositionConnected ? "#94a3b8" : "#6b7280", flexShrink: 0 }}>
               X Position (%)
             </span>
             <input
               type="range"
               min="0"
               max="100"
-              value={xPos}
+              disabled={xPositionConnected}
+              value={xPositionConnected ? 0 : xPos}
               onChange={(e) => setXPos(Number(e.target.value))}
               className="nodrag"
-              style={{ flex: 1, accentColor: "#3b82f6", height: "4px", borderRadius: "2px", cursor: "pointer" }}
-            />
-            <span style={{ fontSize: "12px", fontWeight: 500, color: "#111827", minWidth: "24px", textAlign: "right" }}>
-              {xPos}
-            </span>
-            <button
-              onClick={() => setXPos(0)}
-              type="button"
-              className="nodrag"
               style={{
-                background: "none",
-                border: 0,
-                color: "#9ca3af",
-                cursor: "pointer",
-                padding: "2px",
-                display: "flex",
-                alignItems: "center",
+                flex: 1,
+                accentColor: xPositionConnected ? "#cbd5e1" : "#3b82f6",
+                height: "4px",
+                borderRadius: "2px",
+                cursor: xPositionConnected ? "not-allowed" : "pointer",
+                opacity: xPositionConnected ? 0.5 : 1,
               }}
-            >
-              <RotateCcw size={12} />
-            </button>
+            />
+            <span style={{ fontSize: "12px", fontWeight: 500, color: xPositionConnected ? "#94a3b8" : "#111827", minWidth: "24px", textAlign: "right" }}>
+              {xPositionConnected ? "🔗" : xPos}
+            </span>
+            {!xPositionConnected && (
+              <button
+                onClick={() => setXPos(0)}
+                type="button"
+                className="nodrag"
+                style={{
+                  background: "none",
+                  border: 0,
+                  color: "#9ca3af",
+                  cursor: "pointer",
+                  padding: "2px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <RotateCcw size={12} />
+              </button>
+            )}
             <button
               type="button"
               className="nodrag"
@@ -404,37 +427,47 @@ export function CropImageNode({ id, data, onDelete }: { id: string; data: any; o
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span style={{ width: "100px", fontSize: "12px", color: "#6b7280", flexShrink: 0 }}>
+            <span style={{ width: "100px", fontSize: "12px", color: yPositionConnected ? "#94a3b8" : "#6b7280", flexShrink: 0 }}>
               Y Position (%)
             </span>
             <input
               type="range"
               min="0"
               max="100"
-              value={yPos}
+              disabled={yPositionConnected}
+              value={yPositionConnected ? 0 : yPos}
               onChange={(e) => setYPos(Number(e.target.value))}
               className="nodrag"
-              style={{ flex: 1, accentColor: "#3b82f6", height: "4px", borderRadius: "2px", cursor: "pointer" }}
-            />
-            <span style={{ fontSize: "12px", fontWeight: 500, color: "#111827", minWidth: "24px", textAlign: "right" }}>
-              {yPos}
-            </span>
-            <button
-              onClick={() => setYPos(0)}
-              type="button"
-              className="nodrag"
               style={{
-                background: "none",
-                border: 0,
-                color: "#9ca3af",
-                cursor: "pointer",
-                padding: "2px",
-                display: "flex",
-                alignItems: "center",
+                flex: 1,
+                accentColor: yPositionConnected ? "#cbd5e1" : "#3b82f6",
+                height: "4px",
+                borderRadius: "2px",
+                cursor: yPositionConnected ? "not-allowed" : "pointer",
+                opacity: yPositionConnected ? 0.5 : 1,
               }}
-            >
-              <RotateCcw size={12} />
-            </button>
+            />
+            <span style={{ fontSize: "12px", fontWeight: 500, color: yPositionConnected ? "#94a3b8" : "#111827", minWidth: "24px", textAlign: "right" }}>
+              {yPositionConnected ? "🔗" : yPos}
+            </span>
+            {!yPositionConnected && (
+              <button
+                onClick={() => setYPos(0)}
+                type="button"
+                className="nodrag"
+                style={{
+                  background: "none",
+                  border: 0,
+                  color: "#9ca3af",
+                  cursor: "pointer",
+                  padding: "2px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <RotateCcw size={12} />
+              </button>
+            )}
             <button
               type="button"
               className="nodrag"
@@ -482,37 +515,47 @@ export function CropImageNode({ id, data, onDelete }: { id: string; data: any; o
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span style={{ width: "100px", fontSize: "12px", color: "#6b7280", flexShrink: 0 }}>
+            <span style={{ width: "100px", fontSize: "12px", color: widthConnected ? "#94a3b8" : "#6b7280", flexShrink: 0 }}>
               Width (%)
             </span>
             <input
               type="range"
               min="0"
               max="100"
-              value={width}
+              disabled={widthConnected}
+              value={widthConnected ? 0 : width}
               onChange={(e) => setWidth(Number(e.target.value))}
               className="nodrag"
-              style={{ flex: 1, accentColor: "#3b82f6", height: "4px", borderRadius: "2px", cursor: "pointer" }}
-            />
-            <span style={{ fontSize: "12px", fontWeight: 500, color: "#111827", minWidth: "24px", textAlign: "right" }}>
-              {width}
-            </span>
-            <button
-              onClick={() => setWidth(100)}
-              type="button"
-              className="nodrag"
               style={{
-                background: "none",
-                border: 0,
-                color: "#9ca3af",
-                cursor: "pointer",
-                padding: "2px",
-                display: "flex",
-                alignItems: "center",
+                flex: 1,
+                accentColor: widthConnected ? "#cbd5e1" : "#3b82f6",
+                height: "4px",
+                borderRadius: "2px",
+                cursor: widthConnected ? "not-allowed" : "pointer",
+                opacity: widthConnected ? 0.5 : 1,
               }}
-            >
-              <RotateCcw size={12} />
-            </button>
+            />
+            <span style={{ fontSize: "12px", fontWeight: 500, color: widthConnected ? "#94a3b8" : "#111827", minWidth: "24px", textAlign: "right" }}>
+              {widthConnected ? "🔗" : width}
+            </span>
+            {!widthConnected && (
+              <button
+                onClick={() => setWidth(100)}
+                type="button"
+                className="nodrag"
+                style={{
+                  background: "none",
+                  border: 0,
+                  color: "#9ca3af",
+                  cursor: "pointer",
+                  padding: "2px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <RotateCcw size={12} />
+              </button>
+            )}
             <button
               type="button"
               className="nodrag"
@@ -560,37 +603,47 @@ export function CropImageNode({ id, data, onDelete }: { id: string; data: any; o
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span style={{ width: "100px", fontSize: "12px", color: "#6b7280", flexShrink: 0 }}>
+            <span style={{ width: "100px", fontSize: "12px", color: heightConnected ? "#94a3b8" : "#6b7280", flexShrink: 0 }}>
               Height (%)
             </span>
             <input
               type="range"
               min="0"
               max="100"
-              value={height}
+              disabled={heightConnected}
+              value={heightConnected ? 0 : height}
               onChange={(e) => setHeight(Number(e.target.value))}
               className="nodrag"
-              style={{ flex: 1, accentColor: "#3b82f6", height: "4px", borderRadius: "2px", cursor: "pointer" }}
-            />
-            <span style={{ fontSize: "12px", fontWeight: 500, color: "#111827", minWidth: "24px", textAlign: "right" }}>
-              {height}
-            </span>
-            <button
-              onClick={() => setHeight(100)}
-              type="button"
-              className="nodrag"
               style={{
-                background: "none",
-                border: 0,
-                color: "#9ca3af",
-                cursor: "pointer",
-                padding: "2px",
-                display: "flex",
-                alignItems: "center",
+                flex: 1,
+                accentColor: heightConnected ? "#cbd5e1" : "#3b82f6",
+                height: "4px",
+                borderRadius: "2px",
+                cursor: heightConnected ? "not-allowed" : "pointer",
+                opacity: heightConnected ? 0.5 : 1,
               }}
-            >
-              <RotateCcw size={12} />
-            </button>
+            />
+            <span style={{ fontSize: "12px", fontWeight: 500, color: heightConnected ? "#94a3b8" : "#111827", minWidth: "24px", textAlign: "right" }}>
+              {heightConnected ? "🔗" : height}
+            </span>
+            {!heightConnected && (
+              <button
+                onClick={() => setHeight(100)}
+                type="button"
+                className="nodrag"
+                style={{
+                  background: "none",
+                  border: 0,
+                  color: "#9ca3af",
+                  cursor: "pointer",
+                  padding: "2px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <RotateCcw size={12} />
+              </button>
+            )}
             <button
               type="button"
               className="nodrag"

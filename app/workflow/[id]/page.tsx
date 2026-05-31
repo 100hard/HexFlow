@@ -169,7 +169,7 @@ export default function WorkflowCanvasPage() {
   // Connection handler with visual color-coded stroke styling matching source handle type
   const onConnect = useCallback(
     (connection: Connection) => {
-      let strokeColor = "#818cf8"; // Premium indigo edge by default
+      let strokeColor = "#818cf8"; // Animated Purple/Indigo by default
 
       const sourceHandle = connection.sourceHandle || "";
       const targetHandle = connection.targetHandle || "";
@@ -184,18 +184,49 @@ export default function WorkflowCanvasPage() {
                  sourceHandle.includes("width") || targetHandle.includes("width") || 
                  sourceHandle.includes("height") || targetHandle.includes("height")) {
         strokeColor = "#ec4899"; // pink
+      } else {
+        // Standard text flows styled with premium brand purple edge!
+        strokeColor = "#4f46e5";
       }
 
       const newEdge: Edge = {
         ...connection,
         id: `edge-${Date.now()}`,
         animated: true,
-        style: { stroke: strokeColor, strokeWidth: 2 },
+        style: { stroke: strokeColor, strokeWidth: 2.5 },
       };
 
       setEdges((eds) => addEdge(newEdge, eds));
     },
     [setEdges]
+  );
+
+  // Type-safe connection validation rules
+  const isValidConnection = useCallback(
+    (connection: any) => {
+      // Disallow connecting to self
+      if (connection.source === connection.target) return false;
+
+      const sourceHandle = connection.sourceHandle || "";
+      const targetHandle = connection.targetHandle || "";
+
+      const getHandleFormat = (handleId: string) => {
+        if (handleId.includes("image")) return "image";
+        if (handleId.includes("video")) return "video";
+        if (handleId.includes("audio")) return "audio";
+        if (handleId.includes("Position") || handleId.includes("width") || handleId.includes("height")) {
+          return "coordinate";
+        }
+        return "text";
+      };
+
+      const sourceFormat = getHandleFormat(sourceHandle);
+      const targetFormat = getHandleFormat(targetHandle);
+
+      // Enforce strict matching formats
+      return sourceFormat === targetFormat;
+    },
+    []
   );
 
   // Register all node templates
@@ -355,6 +386,7 @@ export default function WorkflowCanvasPage() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            isValidConnection={isValidConnection}
             nodeTypes={nodeTypes}
             fitView={false}
             defaultViewport={{ x: 100, y: 80, zoom: 0.58 }}
