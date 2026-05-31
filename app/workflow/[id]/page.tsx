@@ -14,10 +14,10 @@ import {
   type Connection,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { ArrowLeft, Play } from "lucide-react";
+import { ArrowLeft, Play, Loader2, Save, Cloud, Check } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useCallback, useMemo } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useCallback, useMemo, useEffect, useState } from "react";
 
 // Imports of custom nodes and sidebar
 import { RequestInputsNode } from "@/components/canvas/nodes/request-inputs";
@@ -26,53 +26,101 @@ import { GeminiNode } from "@/components/canvas/nodes/gemini-node";
 import { CropImageNode } from "@/components/canvas/nodes/crop-image-node";
 import { AddNodeBar } from "@/components/canvas/add-node-bar";
 import { AppSidebar } from "@/components/app-sidebar";
-import { workflows } from "@/lib/mock-data";
 
 export default function WorkflowCanvasPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params?.id as string;
 
-  // Retrieve current workflow metadata or fallback
-  const workflow = workflows.find((w) => w.id === id) || {
-    id: "wf-new",
-    name: "AI Racing Car Generator",
-    status: "Active",
-  };
-
-  // Initial nodes layout (Request Inputs and Response default placement with Magica proportions)
-  const initialNodes: Node[] = [
-    {
-      id: "node-request-inputs",
-      type: "requestInputs",
-      position: { x: 80, y: 150 },
-      data: { prompt: "Write Prompt for Car Racing" },
-      deletable: false,
-    },
-    {
-      id: "node-response",
-      type: "response",
-      position: { x: 1050, y: 150 },
-      data: {},
-      deletable: false,
-    },
-  ];
-
-  // Initial connecting edge from Request Inputs to Response
-  const initialEdges: Edge[] = [
-    {
-      id: "edge-1",
-      source: "node-request-inputs",
-      sourceHandle: "output",
-      target: "node-response",
-      targetHandle: "input",
-      animated: true,
-      style: { stroke: "#f97316", strokeWidth: 2 },
-    },
-  ];
+  const [workflowName, setWorkflowName] = useState("Loading workflow...");
+  const [loading, setLoading] = useState(true);
+  const [savingState, setSavingState] = useState<"idle" | "saving" | "saved">("idle");
 
   // React Flow state hooks
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+
+  // 1. Fetch live database workflow graph on mount
+  useEffect(() => {
+    const loadWorkflow = async () => {
+      // Auto-clone logic for featured sample template
+      if (id === "wf-template-racing") {
+        try {
+          const createRes = await fetch("/api/workflows", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: "AI Racing Car Generator (Cloned)" }),
+          });
+
+          if (createRes.ok) {
+            const clonedWf = await createRes.json();
+            router.replace(`/workflow/${clonedWf.id}`);
+          }
+        } catch (err) {
+          console.error("Cloning template error:", err);
+        }
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/workflows/${id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setWorkflowName(data.name);
+          
+          // Populate canvas states
+          if (data.nodes) setNodes(data.nodes);
+          if (data.edges) setEdges(data.edges);
+        } else {
+          router.push("/");
+        }
+      } catch (err) {
+        console.error("Error loading workflow from database:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadWorkflow();
+  }, [id, router, setNodes, setEdges]);
+
+  // 2. Debounced Database Auto-Saving Logic
+  const saveWorkflowState = useCallback(async (currentNodes: Node[], currentEdges: Edge[]) => {
+    if (loading || id === "wf-template-racing") return;
+    setSavingState("saving");
+
+    try {
+      const response = await fetch(`/api/workflows/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nodes: currentNodes,
+          edges: currentEdges,
+        }),
+      });
+
+      if (response.ok) {
+        setSavingState("saved");
+        setTimeout(() => setSavingState("idle"), 2500);
+      } else {
+        setSavingState("idle");
+      }
+    } catch (err) {
+      console.error("Failed to auto-save canvas:", err);
+      setSavingState("idle");
+    }
+  }, [loading, id]);
+
+  // Trigger auto-save when nodes/edges changes stop
+  useEffect(() => {
+    if (loading || nodes.length === 0) return;
+    
+    const handler = setTimeout(() => {
+      saveWorkflowState(nodes, edges);
+    }, 1500);
+
+    return () => clearTimeout(handler);
+  }, [nodes, edges, loading, saveWorkflowState]);
 
   // Deletion handler for user-added nodes
   const handleDeleteNode = useCallback(
@@ -86,7 +134,6 @@ export default function WorkflowCanvasPage() {
   // Dynamic mapping to inject onDelete handler into custom nodes data
   const nodesWithDelete = useMemo(() => {
     return nodes.map((node) => {
-      // Injects onDelete for all except essential core nodes
       if (node.id === "node-request-inputs" || node.id === "node-response") {
         return node;
       }
@@ -122,9 +169,8 @@ export default function WorkflowCanvasPage() {
   // Connection handler with visual color-coded stroke styling matching source handle type
   const onConnect = useCallback(
     (connection: Connection) => {
-      let strokeColor = "#f97316"; // default orange
+      let strokeColor = "#818cf8"; // Premium indigo edge by default
 
-      // Check handle IDs or source fields to determine styling
       const sourceHandle = connection.sourceHandle || "";
       const targetHandle = connection.targetHandle || "";
 
@@ -160,6 +206,17 @@ export default function WorkflowCanvasPage() {
     cropImage: CropImageNode,
   };
 
+  if (loading) {
+    return (
+      <div style={{ display: "flex", width: "100vw", height: "100vh", alignItems: "center", justifyContent: "center", background: "#fcfcfc" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+          <Loader2 size={32} className="animate-spin text-indigo-600" />
+          <span style={{ fontSize: 14, color: "#6b7280" }}>Initializing canvas board...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -171,10 +228,8 @@ export default function WorkflowCanvasPage() {
         position: "relative",
       }}
     >
-      {/* Left Sidebar Navigation present inside the Workflow Canvas */}
       <AppSidebar />
 
-      {/* Main Container shifted right by sidebar width */}
       <div
         style={{
           marginLeft: "261px",
@@ -185,7 +240,7 @@ export default function WorkflowCanvasPage() {
           position: "relative",
         }}
       >
-        {/* Simple Header Bar */}
+        {/* Workspace Canvas Header */}
         <header
           style={{
             height: "56px",
@@ -214,20 +269,60 @@ export default function WorkflowCanvasPage() {
                 background: "#ffffff",
                 color: "#374151",
                 textDecoration: "none",
-                transition: "background 0.15s ease",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#f9fafb")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "#ffffff")}
             >
               <ArrowLeft size={16} />
             </Link>
-            <span style={{ fontSize: "14px", fontWeight: 600, color: "#111827" }}>
-              {workflow.name}
-            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "14px", fontWeight: 600, color: "#111827" }}>
+                {workflowName}
+              </span>
+              
+              {/* Cloud Auto-Saving indicator */}
+              <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "#9ca3af", marginLeft: 8 }}>
+                {savingState === "saving" ? (
+                  <>
+                    <Loader2 size={12} className="animate-spin text-indigo-500" />
+                    <span>Saving...</span>
+                  </>
+                ) : savingState === "saved" ? (
+                  <>
+                    <Check size={12} className="text-emerald-500" />
+                    <span className="text-emerald-600">Saved</span>
+                  </>
+                ) : (
+                  <>
+                    <Cloud size={12} />
+                    <span>Cloud synced</span>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Right Side: Action Run Play button */}
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <button
+              onClick={() => saveWorkflowState(nodes, edges)}
+              style={{
+                display: "inline-flex",
+                height: "32px",
+                alignItems: "center",
+                gap: "6px",
+                borderRadius: "6px",
+                border: "1px solid #e5e7eb",
+                background: "#ffffff",
+                padding: "0 12px",
+                fontSize: "12px",
+                fontWeight: 500,
+                color: "#374151",
+                cursor: "pointer",
+                transition: "background 0.15s ease",
+              }}
+            >
+              <Save size={12} />
+              <span>Force save</span>
+            </button>
             <button
               style={{
                 display: "inline-flex",
@@ -245,8 +340,6 @@ export default function WorkflowCanvasPage() {
                 boxShadow: "0 1px 2px rgba(79, 70, 229, 0.2)",
                 transition: "background 0.15s ease",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#4338ca")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "#4f46e5")}
             >
               <Play size={12} fill="#ffffff" />
               <span>Run</span>

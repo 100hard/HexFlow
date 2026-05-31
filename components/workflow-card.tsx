@@ -3,8 +3,8 @@
 import { useState, type CSSProperties } from "react";
 import { ImagePlus, MoreVertical, PencilLine, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-import type { Workflow } from "@/lib/mock-data";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,8 +13,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+type Workflow = {
+  id: string;
+  name: string;
+  updatedAt: string | Date;
+};
+
 type WorkflowCardProps = {
   workflow: Workflow;
+  onRefresh?: () => void;
 };
 
 const cardStyle: CSSProperties = {
@@ -23,8 +30,65 @@ const cardStyle: CSSProperties = {
   maxWidth: 250,
 };
 
-export function WorkflowCard({ workflow }: WorkflowCardProps) {
+export function WorkflowCard({ workflow, onRefresh }: WorkflowCardProps) {
   const [hovered, setHovered] = useState(false);
+  const router = useRouter();
+
+  // 1. Interactive Rename Action Handler
+  const handleRename = async () => {
+    const newName = prompt("Enter new workflow name:", workflow.name);
+    if (!newName || newName.trim() === "" || newName === workflow.name) return;
+
+    try {
+      const response = await fetch(`/api/workflows/${workflow.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newName.trim() }),
+      });
+
+      if (response.ok) {
+        if (onRefresh) onRefresh();
+        router.refresh();
+      } else {
+        const err = await response.json();
+        alert(err.error || "Failed to rename workflow");
+      }
+    } catch (error) {
+      alert("Failed to rename workflow. Please try again.");
+    }
+  };
+
+  // 2. Interactive Delete Action Handler
+  const handleDelete = async () => {
+    if (!confirm(`Are you sure you want to delete "${workflow.name}"?`)) return;
+
+    try {
+      const response = await fetch(`/api/workflows/${workflow.id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        if (onRefresh) onRefresh();
+        router.refresh();
+      } else {
+        const err = await response.json();
+        alert(err.error || "Failed to delete workflow");
+      }
+    } catch (error) {
+      alert("Failed to delete workflow. Please try again.");
+    }
+  };
+
+  // Format updatedAt date beautifully
+  const displayDate = typeof workflow.updatedAt === "string" 
+    ? workflow.updatedAt 
+    : `Edited ${new Date(workflow.updatedAt).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      })}`;
 
   return (
     <div
@@ -161,13 +225,13 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
                 Open workflow
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem style={{ fontSize: 14 }}>
-              <PencilLine size={16} />
+            <DropdownMenuItem onClick={handleRename} style={{ fontSize: 14 }}>
+              <PencilLine size={16} className="mr-2" />
               Rename workflow
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600 focus:bg-red-50 focus:text-red-700" style={{ fontSize: 14 }}>
-              <Trash2 size={16} />
+            <DropdownMenuItem onClick={handleDelete} className="text-red-600 focus:bg-red-50 focus:text-red-700" style={{ fontSize: 14 }}>
+              <Trash2 size={16} className="mr-2" />
               Delete workflow
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -197,7 +261,7 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
             color: "#6b7280",
           }}
         >
-          {workflow.updatedAt}
+          {displayDate}
         </div>
       </div>
     </div>
