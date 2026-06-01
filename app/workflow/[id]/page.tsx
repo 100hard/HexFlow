@@ -803,18 +803,18 @@ export default function WorkflowCanvasPage() {
                       nodeColor={(node) => {
                         switch (node.type) {
                           case "requestInputs":
-                            return "#27272a"; // dark grey square
+                            return "#52525b"; // brighter dark gray square
                           case "gemini":
                             return "#22c55e"; // green rectangle
                           case "cropImage":
                             return "#3b82f6"; // blue rectangle
                           case "response":
-                            return "#27272a"; // dark grey square
+                            return "#52525b"; // brighter dark gray square
                           default:
                             return "#3f3f46";
                         }
                       }}
-                      maskColor="rgba(24, 24, 27, 0.7)"
+                      maskColor="rgba(255, 255, 255, 0.15)"
                     />
                     {/* Collapse button on the top-right of the minimap */}
                     <button
@@ -823,14 +823,14 @@ export default function WorkflowCanvasPage() {
                       className="nodrag"
                       style={{
                         position: "absolute",
-                        top: "-10px",
-                        right: "-10px",
+                        top: "-8px",
+                        right: "-8px",
                         width: "22px",
                         height: "22px",
                         borderRadius: "50%",
                         background: "#ffffff",
-                        border: "1px solid #1c1917",
-                        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                        border: "2px solid #1c1917",
+                        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
