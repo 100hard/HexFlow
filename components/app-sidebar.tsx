@@ -3,8 +3,8 @@ import { LayoutGrid, Settings2, Workflow } from "lucide-react";
 import type { CSSProperties } from "react";
 
 const navItems = [
-  { label: "Dashboard", href: "#", icon: LayoutGrid, active: false },
-  { label: "Workflows", href: "#", icon: Workflow, active: true },
+  { label: "Dashboard", href: "/", icon: LayoutGrid, active: false },
+  { label: "Workflows", href: "/", icon: Workflow, active: true },
 ];
 
 const sidebarStyle: CSSProperties = {
