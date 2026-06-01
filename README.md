@@ -1,6 +1,6 @@
-# NextFlow — AI Workflow Automation Dashboard
+# NextFlow 
 
-**NextFlow** is a premium, high-fidelity interactive workflow canvas and automation dashboard inspired by the state-of-the-art aesthetics and functional architecture of platforms like *Galaxy.ai* and *Magica Flow*. 
+**NextFlow** is an interactive workflow canvas and automation dashboard inspired by the architecture of platforms the Platform *Galaxy.ai*. 
 
 Built on a robust Next.js serverless framework and dynamic React Flow layout canvas, it enables developers and creators to design, configure, execute, and monitor complex AI pipeline graphs seamlessly.
 
