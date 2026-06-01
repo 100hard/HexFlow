@@ -451,8 +451,8 @@ export default function WorkflowCanvasPage() {
                  sourceHandle.includes("height") || targetHandle.includes("height")) {
         strokeColor = "#ec4899"; // pink
       } else {
-        // Standard text flows styled with premium brand purple edge!
-        strokeColor = "#4f46e5";
+        // Standard text flows styled with premium brand orange edge to match orange handles!
+        strokeColor = "#f59e0b";
       }
 
       const newEdge: Edge = {
@@ -815,7 +815,7 @@ export default function WorkflowCanvasPage() {
 
         {/* Main React Flow Canvas Area */}
         <main style={{ flex: 1, display: "flex", flexDirection: "row", position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
-          <div style={{ flex: 1, height: "100%", position: "relative" }}>
+          <div style={{ flex: 1, height: "100%", position: "relative", background: "#f8f9fa" }}>
             <ReactFlow
               nodes={nodesWithDelete}
               edges={edges}
