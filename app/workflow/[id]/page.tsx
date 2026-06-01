@@ -3,18 +3,19 @@
 import {
   Background,
   BackgroundVariant,
-  Controls,
   MiniMap,
   ReactFlow,
   useEdgesState,
   useNodesState,
   addEdge,
+  useReactFlow,
+  useViewport,
   type Edge,
   type Node,
   type Connection,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { ArrowLeft, Play, Loader2, Save, Cloud, Check, Undo2, Redo2, Download, Upload, History, Calculator, Wallet, Map, Minimize2 } from "lucide-react";
+import { ArrowLeft, Play, Loader2, Save, Cloud, Check, Undo2, Redo2, Download, Upload, History, Calculator, Wallet, Map, Minimize2, ChevronLeft, ChevronRight, Command, ZoomOut, ZoomIn, Maximize2, LayoutGrid, Move } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useMemo, useEffect, useState } from "react";
@@ -746,15 +747,12 @@ export default function WorkflowCanvasPage() {
               {/* Dot background styled beautifully and crisply */}
               <Background variant={BackgroundVariant.Dots} gap={24} size={3} color="#94a3b8" />
 
-              {/* Zoom & Fit controls bottom-left */}
-              <Controls
-                style={{
-                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "8px",
-                  overflow: "hidden",
-                  background: "#ffffff",
-                }}
+              {/* Premium custom bottom bar controls */}
+              <CustomCanvasControls
+                undo={undo}
+                redo={redo}
+                canUndo={past.length > 0}
+                canRedo={future.length > 0}
               />
 
               {/* Toggleable Minimap bottom-right */}
@@ -1064,6 +1062,280 @@ export default function WorkflowCanvasPage() {
 
       {/* Floating Add Node Popover Toolbar bottom center relative to canvas */}
       <AddNodeBar onAddNode={handleAddNode} />
+    </div>
+  );
+}
+
+// Custom Premium Canvas Controls matching Galaxy Bottom Options exactly
+function CustomCanvasControls({
+  undo,
+  redo,
+  canUndo,
+  canRedo,
+}: {
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+}) {
+  const { zoomIn, zoomOut, fitView } = useReactFlow();
+  const { zoom } = useViewport();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const zoomPercent = Math.round(zoom * 100);
+
+  if (isCollapsed) {
+    return (
+      <button
+        type="button"
+        onClick={() => setIsCollapsed(false)}
+        className="nodrag"
+        style={{
+          position: "absolute",
+          bottom: "20px",
+          left: "20px",
+          width: "44px",
+          height: "44px",
+          borderRadius: "14px",
+          background: "#ffffff",
+          border: "1px solid #e2e8f0",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#475569",
+          cursor: "pointer",
+          zIndex: 100,
+          transition: "all 0.15s ease",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "#ffffff")}
+      >
+        <ChevronRight size={18} />
+      </button>
+    );
+  }
+
+  return (
+    <div
+      className="nodrag"
+      style={{
+        position: "absolute",
+        bottom: "20px",
+        left: "20px",
+        height: "44px",
+        background: "#ffffff",
+        border: "1px solid #e2e8f0",
+        borderRadius: "22px",
+        boxShadow: "0 4px 15px rgba(0, 0, 0, 0.05)",
+        display: "flex",
+        alignItems: "center",
+        padding: "0 6px",
+        gap: "4px",
+        zIndex: 100,
+        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      }}
+    >
+      {/* Collapse button < */}
+      <button
+        type="button"
+        onClick={() => setIsCollapsed(true)}
+        style={{
+          width: "32px",
+          height: "32px",
+          borderRadius: "10px",
+          border: "2px solid #0f172a",
+          background: "#ffffff",
+          color: "#0f172a",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          fontWeight: "bold",
+          marginRight: "4px",
+        }}
+      >
+        <ChevronLeft size={16} strokeWidth={2.5} />
+      </button>
+
+      <div style={{ width: "1px", height: "18px", background: "#e2e8f0", margin: "0 4px" }} />
+
+      {/* Undo & Redo */}
+      <button
+        type="button"
+        onClick={undo}
+        disabled={!canUndo}
+        style={{
+          width: "28px",
+          height: "28px",
+          borderRadius: "6px",
+          border: 0,
+          background: "transparent",
+          color: canUndo ? "#475569" : "#cbd5e1",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: canUndo ? "pointer" : "not-allowed",
+        }}
+      >
+        <Undo2 size={15} />
+      </button>
+
+      <button
+        type="button"
+        onClick={redo}
+        disabled={!canRedo}
+        style={{
+          width: "28px",
+          height: "28px",
+          borderRadius: "6px",
+          border: 0,
+          background: "transparent",
+          color: canRedo ? "#475569" : "#cbd5e1",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: canRedo ? "pointer" : "not-allowed",
+        }}
+      >
+        <Redo2 size={15} />
+      </button>
+
+      {/* Command Shortcut button */}
+      <button
+        type="button"
+        style={{
+          width: "28px",
+          height: "28px",
+          borderRadius: "6px",
+          border: 0,
+          background: "transparent",
+          color: "#475569",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+        }}
+      >
+        <Command size={15} />
+      </button>
+
+      <div style={{ width: "1px", height: "18px", background: "#e2e8f0", margin: "0 4px" }} />
+
+      {/* Zoom out */}
+      <button
+        type="button"
+        onClick={() => zoomOut()}
+        style={{
+          width: "28px",
+          height: "28px",
+          borderRadius: "6px",
+          border: 0,
+          background: "transparent",
+          color: "#475569",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+        }}
+      >
+        <ZoomOut size={16} />
+      </button>
+
+      {/* Zoom percent display */}
+      <span
+        style={{
+          fontSize: "13px",
+          fontWeight: 500,
+          color: "#475569",
+          minWidth: "36px",
+          textAlign: "center",
+          userSelect: "none",
+        }}
+      >
+        {zoomPercent}%
+      </span>
+
+      {/* Zoom in */}
+      <button
+        type="button"
+        onClick={() => zoomIn()}
+        style={{
+          width: "28px",
+          height: "28px",
+          borderRadius: "6px",
+          border: 0,
+          background: "transparent",
+          color: "#475569",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+        }}
+      >
+        <ZoomIn size={16} />
+      </button>
+
+      <div style={{ width: "1px", height: "18px", background: "#e2e8f0", margin: "0 4px" }} />
+
+      {/* Fit to screen */}
+      <button
+        type="button"
+        onClick={() => fitView({ padding: 0.2 })}
+        style={{
+          width: "28px",
+          height: "28px",
+          borderRadius: "6px",
+          border: 0,
+          background: "transparent",
+          color: "#475569",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+        }}
+      >
+        <Maximize2 size={15} />
+      </button>
+
+      {/* Layout/Grid Grid button */}
+      <button
+        type="button"
+        style={{
+          width: "28px",
+          height: "28px",
+          borderRadius: "6px",
+          border: 0,
+          background: "transparent",
+          color: "#475569",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+        }}
+      >
+        <LayoutGrid size={15} />
+      </button>
+
+      {/* Center pan button */}
+      <button
+        type="button"
+        style={{
+          width: "28px",
+          height: "28px",
+          borderRadius: "6px",
+          border: 0,
+          background: "transparent",
+          color: "#475569",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          marginRight: "4px",
+        }}
+      >
+        <Move size={15} />
+      </button>
     </div>
   );
 }
