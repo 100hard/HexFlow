@@ -9,7 +9,7 @@ async function getOrCreateDbUser() {
   const { userId } = await auth();
   if (!userId) return null;
 
-  const clerkUser = await currentUser();
+  const clerkUser = await currentUser().catch(() => null);
   const email = clerkUser?.emailAddresses[0]?.emailAddress || `${userId}@clerk.dev`;
 
   // Upsert user into database to ensure perfect state sync
