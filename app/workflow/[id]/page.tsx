@@ -745,7 +745,7 @@ export default function WorkflowCanvasPage() {
               panOnDrag={true}
             >
               {/* Dot background styled beautifully and crisply */}
-              <Background variant={BackgroundVariant.Dots} gap={24} size={3} color="#94a3b8" />
+              <Background variant={BackgroundVariant.Dots} gap={24} size={1.5} color="#cbd5e1" />
 
               {/* Premium custom bottom bar controls */}
               <CustomCanvasControls
