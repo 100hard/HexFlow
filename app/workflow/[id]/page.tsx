@@ -874,6 +874,64 @@ export default function WorkflowCanvasPage() {
               )}
             </button>
 
+            {/* Export JSON Button */}
+            <button
+              type="button"
+              onClick={exportWorkflowToJSON}
+              style={{
+                display: "inline-flex",
+                height: "32px",
+                alignItems: "center",
+                gap: "6px",
+                padding: "0 12px",
+                borderRadius: "8px",
+                border: "1px solid #e2e8f0",
+                background: "#ffffff",
+                color: "#374151",
+                fontSize: "13px",
+                fontWeight: 500,
+                cursor: "pointer",
+                transition: "background 0.15s ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "#ffffff")}
+              title="Export Workflow as JSON"
+            >
+              <Download size={14} />
+              <span>Export</span>
+            </button>
+
+            {/* Import JSON Button */}
+            <label
+              style={{
+                display: "inline-flex",
+                height: "32px",
+                alignItems: "center",
+                gap: "6px",
+                padding: "0 12px",
+                borderRadius: "8px",
+                border: "1px solid #e2e8f0",
+                background: "#ffffff",
+                color: "#374151",
+                fontSize: "13px",
+                fontWeight: 500,
+                cursor: "pointer",
+                transition: "background 0.15s ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "#ffffff")}
+              title="Import Workflow from JSON"
+            >
+              <Upload size={14} />
+              <span>Import</span>
+              <input
+                type="file"
+                accept=".json"
+                onChange={importWorkflowFromJSON}
+                style={{ display: "none" }}
+              />
+            </label>
+
             {/* Execution History Button */}
             <button
               onClick={() => setIsHistoryOpen(!isHistoryOpen)}
