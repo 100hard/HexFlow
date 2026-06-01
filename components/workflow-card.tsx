@@ -35,110 +35,118 @@ export function WorkflowCard({ workflow, onRefresh }: WorkflowCardProps) {
   const router = useRouter();
 
   // 1. Interactive Rename Action Handler
-  const handleRename = async () => {
-    const newName = prompt("Enter new workflow name:", workflow.name);
-    if (!newName || newName.trim() === "" || newName === workflow.name) return;
+  const handleRename = () => {
+    setTimeout(async () => {
+      const newName = prompt("Enter new workflow name:", workflow.name);
+      if (!newName || newName.trim() === "" || newName === workflow.name) return;
 
-    try {
-      const response = await fetch(`/api/workflows/${workflow.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newName.trim() }),
-      });
+      try {
+        const response = await fetch(`/api/workflows/${workflow.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: newName.trim() }),
+        });
 
-      if (response.ok) {
-        if (onRefresh) onRefresh();
-        router.refresh();
-      } else {
-        const err = await response.json();
-        alert(err.error || "Failed to rename workflow");
+        if (response.ok) {
+          if (onRefresh) onRefresh();
+          router.refresh();
+        } else {
+          const err = await response.json();
+          alert(err.error || "Failed to rename workflow");
+        }
+      } catch (error) {
+        alert("Failed to rename workflow. Please try again.");
       }
-    } catch (error) {
-      alert("Failed to rename workflow. Please try again.");
-    }
+    }, 100);
   };
 
   // 2. Interactive Delete Action Handler
-  const handleDelete = async () => {
-    if (!confirm(`Are you sure you want to delete "${workflow.name}"?`)) return;
+  const handleDelete = () => {
+    setTimeout(async () => {
+      if (!confirm(`Are you sure you want to delete "${workflow.name}"?`)) return;
 
-    try {
-      const response = await fetch(`/api/workflows/${workflow.id}`, {
-        method: "DELETE",
-      });
+      try {
+        const response = await fetch(`/api/workflows/${workflow.id}`, {
+          method: "DELETE",
+        });
 
-      if (response.ok) {
-        if (onRefresh) onRefresh();
-        router.refresh();
-      } else {
-        const err = await response.json();
-        alert(err.error || "Failed to delete workflow");
+        if (response.ok) {
+          if (onRefresh) onRefresh();
+          router.refresh();
+        } else {
+          const err = await response.json();
+          alert(err.error || "Failed to delete workflow");
+        }
+      } catch (error) {
+        alert("Failed to delete workflow. Please try again.");
       }
-    } catch (error) {
-      alert("Failed to delete workflow. Please try again.");
-    }
+    }, 100);
   };
 
   // 3. Interactive Duplicate Action Handler
-  const handleDuplicate = async () => {
-    try {
-      const detailsRes = await fetch(`/api/workflows/${workflow.id}`);
-      if (!detailsRes.ok) {
-        alert("Failed to fetch original workflow details.");
-        return;
-      }
-      const original = await detailsRes.json();
+  const handleDuplicate = () => {
+    setTimeout(async () => {
+      try {
+        const detailsRes = await fetch(`/api/workflows/${workflow.id}`);
+        if (!detailsRes.ok) {
+          alert("Failed to fetch original workflow details.");
+          return;
+        }
+        const original = await detailsRes.json();
 
-      const copyRes = await fetch("/api/workflows", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: `${original.name} (Copy)`,
-          nodes: original.nodes,
-          edges: original.edges,
-        }),
-      });
+        const copyRes = await fetch("/api/workflows", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: `${original.name} (Copy)`,
+            nodes: original.nodes,
+            edges: original.edges,
+          }),
+        });
 
-      if (copyRes.ok) {
-        if (onRefresh) onRefresh();
-        router.refresh();
-      } else {
-        alert("Failed to duplicate workflow.");
+        if (copyRes.ok) {
+          if (onRefresh) onRefresh();
+          router.refresh();
+        } else {
+          alert("Failed to duplicate workflow.");
+        }
+      } catch (error) {
+        alert("An error occurred during duplication.");
       }
-    } catch (error) {
-      alert("An error occurred during duplication.");
-    }
+    }, 100);
   };
 
   // 4. Interactive Export JSON Handler
-  const handleExportJSON = async () => {
-    try {
-      const detailsRes = await fetch(`/api/workflows/${workflow.id}`);
-      if (!detailsRes.ok) {
-        alert("Failed to fetch workflow details.");
-        return;
+  const handleExportJSON = () => {
+    setTimeout(async () => {
+      try {
+        const detailsRes = await fetch(`/api/workflows/${workflow.id}`);
+        if (!detailsRes.ok) {
+          alert("Failed to fetch workflow details.");
+          return;
+        }
+        const details = await detailsRes.json();
+        
+        const workflowData = {
+          name: details.name,
+          nodes: details.nodes,
+          edges: details.edges,
+        };
+        
+        const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+          JSON.stringify(workflowData, null, 2)
+        )}`;
+        
+        const downloadAnchor = document.createElement("a");
+        downloadAnchor.setAttribute("href", jsonString);
+        downloadAnchor.setAttribute("download", `${details.name.replace(/\s+/g, "_").toLowerCase()}_config.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+      } catch (error) {
+        alert("Failed to export workflow to JSON.");
       }
-      const details = await detailsRes.json();
-      
-      const workflowData = {
-        name: details.name,
-        nodes: details.nodes,
-        edges: details.edges,
-      };
-      
-      const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
-        JSON.stringify(workflowData, null, 2)
-      )}`;
-      
-      const downloadAnchor = document.createElement("a");
-      downloadAnchor.setAttribute("href", jsonString);
-      downloadAnchor.setAttribute("download", `${details.name.replace(/\s+/g, "_").toLowerCase()}_config.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-    } catch (error) {
-      alert("Failed to export workflow to JSON.");
-    }
+    }, 100);
   };
 
   // Format updatedAt date beautifully
@@ -363,20 +371,20 @@ export function WorkflowCard({ workflow, onRefresh }: WorkflowCardProps) {
                 <span>Open</span>
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleRename} style={{ fontSize: 13, fontWeight: 500, borderRadius: 8 }} className="flex items-center px-2 py-1.5 text-slate-700 hover:bg-slate-50 cursor-pointer">
+            <DropdownMenuItem onSelect={handleRename} style={{ fontSize: 13, fontWeight: 500, borderRadius: 8 }} className="flex items-center px-2 py-1.5 text-slate-700 hover:bg-slate-50 cursor-pointer">
               <Pencil size={14} className="mr-2.5 text-slate-500" />
               <span>Rename</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleDuplicate} style={{ fontSize: 13, fontWeight: 500, borderRadius: 8 }} className="flex items-center px-2 py-1.5 text-slate-700 hover:bg-slate-50 cursor-pointer">
+            <DropdownMenuItem onSelect={handleDuplicate} style={{ fontSize: 13, fontWeight: 500, borderRadius: 8 }} className="flex items-center px-2 py-1.5 text-slate-700 hover:bg-slate-50 cursor-pointer">
               <Copy size={14} className="mr-2.5 text-slate-500" />
               <span>Duplicate</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleExportJSON} style={{ fontSize: 13, fontWeight: 500, borderRadius: 8 }} className="flex items-center px-2 py-1.5 text-slate-700 hover:bg-slate-50 cursor-pointer">
+            <DropdownMenuItem onSelect={handleExportJSON} style={{ fontSize: 13, fontWeight: 500, borderRadius: 8 }} className="flex items-center px-2 py-1.5 text-slate-700 hover:bg-slate-50 cursor-pointer">
               <Download size={14} className="mr-2.5 text-slate-500" />
               <span>Export JSON</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="my-1 border-t border-slate-100" />
-            <DropdownMenuItem onClick={handleDelete} className="flex items-center px-2 py-1.5 text-red-600 hover:bg-red-50 focus:bg-red-50 focus:text-red-700 cursor-pointer" style={{ fontSize: 13, fontWeight: 500, borderRadius: 8 }}>
+            <DropdownMenuItem onSelect={handleDelete} className="flex items-center px-2 py-1.5 text-red-600 hover:bg-red-50 focus:bg-red-50 focus:text-red-700 cursor-pointer" style={{ fontSize: 13, fontWeight: 500, borderRadius: 8 }}>
               <Trash2 size={14} className="mr-2.5 text-red-500" />
               <span>Delete</span>
             </DropdownMenuItem>

@@ -1,7 +1,7 @@
 "use client";
 
 import { Handle, Position, useEdges, useNodes } from "@xyflow/react";
-import { Coins, Info, Play, RotateCcw, Trash2, Upload, Plus, Maximize2 } from "lucide-react";
+import { Coins, Info, Play, RotateCcw, Trash2, Upload, Plus, Maximize2, Loader2 } from "lucide-react";
 import { useState } from "react";
 
 export function CropImageNode({ id, data, onDelete }: { id: string; data: any; onDelete?: (id: string) => void }) {
@@ -247,10 +247,14 @@ export function CropImageNode({ id, data, onDelete }: { id: string; data: any; o
           {/* Sleek Run Play Button */}
           <button
             type="button"
+            disabled={data?.isExecuting || data?.executing}
+            onClick={() => {
+              if (data?.onRunNode) data.onRunNode();
+            }}
             style={{
-              background: "rgba(34, 197, 94, 0.15)",
-              border: "1px solid rgba(34, 197, 94, 0.2)",
-              color: "#22c55e",
+              background: (data?.isExecuting || data?.executing) ? "rgba(107, 114, 128, 0.1)" : "rgba(34, 197, 94, 0.15)",
+              border: (data?.isExecuting || data?.executing) ? "1px solid rgba(107, 114, 128, 0.2)" : "1px solid rgba(34, 197, 94, 0.2)",
+              color: (data?.isExecuting || data?.executing) ? "#6b7280" : "#22c55e",
               borderRadius: "6px",
               padding: "6px 12px",
               fontSize: "12px",
@@ -258,18 +262,26 @@ export function CropImageNode({ id, data, onDelete }: { id: string; data: any; o
               display: "inline-flex",
               alignItems: "center",
               gap: "6px",
-              cursor: "pointer",
+              cursor: (data?.isExecuting || data?.executing) ? "not-allowed" : "pointer",
               transition: "all 0.2s",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(34, 197, 94, 0.25)";
+              if (!data?.isExecuting && !data?.executing) {
+                e.currentTarget.style.background = "rgba(34, 197, 94, 0.25)";
+              }
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(34, 197, 94, 0.15)";
+              if (!data?.isExecuting && !data?.executing) {
+                e.currentTarget.style.background = "rgba(34, 197, 94, 0.15)";
+              }
             }}
           >
-            <Play size={12} fill="currentColor" />
-            <span>Run</span>
+            {data?.executing ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : (
+              <Play size={12} fill="currentColor" />
+            )}
+            <span>{data?.executing ? "Running..." : "Run"}</span>
           </button>
 
           {/* More actions button */}

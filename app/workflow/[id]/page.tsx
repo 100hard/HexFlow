@@ -228,18 +228,22 @@ export default function WorkflowCanvasPage() {
   }, [id, router, setNodes, setEdges]);
 
   // 2. Debounced Database Auto-Saving Logic
-  const saveWorkflowState = useCallback(async (currentNodes: Node[], currentEdges: Edge[]) => {
+  const saveWorkflowState = useCallback(async (currentNodes: Node[], currentEdges: Edge[], currentName?: string) => {
     if (loading || id === "wf-template-marketing") return;
     setSavingState("saving");
 
     try {
+      const payload: any = {
+        nodes: currentNodes,
+        edges: currentEdges,
+      };
+      if (currentName) {
+        payload.name = currentName;
+      }
       const response = await fetch(`/api/workflows/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nodes: currentNodes,
-          edges: currentEdges,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
@@ -451,16 +455,145 @@ export default function WorkflowCanvasPage() {
     }
   }, [id, nodes, edges, isExecuting, fetchRuns]);
 
+  // Core handler to execute a single node and save it to history logs
+  const handleExecuteSingleNode = useCallback(async (nodeId: string) => {
+    if (isExecuting) return;
+    
+    const node = nodes.find((n) => n.id === nodeId);
+    if (!node) return;
+
+    setIsExecuting(true);
+    setExecutingNodeIds([nodeId]);
+    const startTime = Date.now();
+
+    try {
+      // Simulating the exact artificial delays
+      let executionDelay = 1200; // default delay
+      if (node.type === "cropImage") {
+        executionDelay = 30000; // Mandatory 30-second delay for Crop Image!
+      } else if (node.type === "gemini") {
+        executionDelay = 3500; // Gemini prompt execution delay
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, executionDelay));
+
+      // Compute and inject outputs
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id === nodeId) {
+            let outputs: any = {};
+            if (n.type === "cropImage") {
+              const incomingEdge = edges.find((e) => e.target === n.id && e.targetHandle === "image");
+              let srcImg = n.data?.imageValue || "";
+              if (incomingEdge) {
+                const srcNode = nds.find((sn) => sn.id === incomingEdge.source);
+                if (srcNode) {
+                  if (srcNode.id === "node-request-inputs") {
+                    const f = ((srcNode.data as any)?.fields || []).find((f: any) => f.id === incomingEdge.sourceHandle);
+                    srcImg = f ? f.value : "";
+                  } else if (srcNode.type === "cropImage") {
+                    srcImg = (srcNode.data as any)?.outputImage?.url || "";
+                  }
+                }
+              }
+              
+              if (!srcImg) {
+                srcImg = "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=300";
+              }
+
+              outputs = {
+                outputImage: {
+                  url: srcImg,
+                  crop: {
+                    x: n.data?.xPos !== undefined ? n.data.xPos : 0,
+                    y: n.data?.yPos !== undefined ? n.data.yPos : 0,
+                    width: n.data?.width !== undefined ? n.data.width : 100,
+                    height: n.data?.height !== undefined ? n.data.height : 100,
+                  },
+                },
+              };
+            } else if (n.type === "gemini") {
+              outputs = {
+                outputResponse: "Drafted marketing copy for wireless bluetooth noise cancelling headphones.",
+              };
+            }
+            
+            return {
+              ...n,
+              data: {
+                ...n.data,
+                ...outputs,
+                executed: true,
+              },
+            };
+          }
+          return n;
+        })
+      );
+
+      const endTime = Date.now();
+      const executionDuration = (endTime - startTime) / 1000;
+
+      // Compile mock execution tracking node states for runs API
+      const mockNodesState: Record<string, any> = {};
+      
+      let nodeInputs: any = {};
+      let nodeOutputs: any = {};
+      
+      if (node.type === "gemini") {
+        nodeInputs = { prompt: (node.data as any)?.prompt || "Write Prompt..." };
+        nodeOutputs = { response: "Drafted marketing copy for wireless bluetooth noise cancelling headphones." };
+      } else if (node.type === "cropImage") {
+        nodeInputs = {
+          x: node.data?.xPos !== undefined ? node.data.xPos : 0,
+          y: node.data?.yPos !== undefined ? node.data.yPos : 0,
+          width: node.data?.width !== undefined ? node.data.width : 100,
+          height: node.data?.height !== undefined ? node.data.height : 100,
+        };
+        nodeOutputs = { image_url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=300" };
+      }
+      
+      mockNodesState[node.id] = {
+        name: node.type === "gemini" ? "Gemini 3.1 Pro" : "Crop Image",
+        status: "SUCCESS",
+        duration: executionDuration,
+        inputs: nodeInputs,
+        outputs: nodeOutputs,
+      };
+
+      const res = await fetch(`/api/workflows/${id}/runs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "SUCCESS",
+          scope: "SINGLE",
+          duration: executionDuration,
+          nodesState: mockNodesState,
+        }),
+      });
+      
+      if (res.ok) {
+        await fetchRuns();
+        setIsHistoryOpen(true);
+      }
+    } catch (err) {
+      console.error("Failed to execute single node:", err);
+    } finally {
+      setIsExecuting(false);
+      setExecutingNodeIds([]);
+    }
+  }, [id, nodes, edges, isExecuting, fetchRuns]);
+
   // Trigger auto-save when nodes/edges changes stop
   useEffect(() => {
     if (loading || nodes.length === 0) return;
     
     const handler = setTimeout(() => {
-      saveWorkflowState(nodes, edges);
+      saveWorkflowState(nodes, edges, workflowName);
     }, 1500);
 
     return () => clearTimeout(handler);
-  }, [nodes, edges, loading, saveWorkflowState]);
+  }, [nodes, edges, loading, saveWorkflowState, workflowName]);
 
   // Node data change handler for custom nodes
   const onNodeDataChange = useCallback(
@@ -564,7 +697,9 @@ export default function WorkflowCanvasPage() {
             fieldId: fieldId || "imageValue",
           });
         },
+        onRunNode: () => handleExecuteSingleNode(node.id),
         executing: executingNodeIds.includes(node.id),
+        isExecuting: isExecuting,
       };
 
       if (node.id === "node-request-inputs" || node.id === "node-response") {
@@ -579,7 +714,7 @@ export default function WorkflowCanvasPage() {
         },
       };
     });
-  }, [nodes, onNodeDataChange, handleDeleteNode, executingNodeIds]);
+  }, [nodes, onNodeDataChange, handleDeleteNode, executingNodeIds, handleExecuteSingleNode, isExecuting]);
 
   // Addition handler for Gemini and Crop Image nodes
   const handleAddNode = useCallback(

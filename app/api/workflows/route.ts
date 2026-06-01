@@ -95,12 +95,15 @@ export async function POST(request: Request) {
       },
     ];
 
+    const nodes = body.nodes || initialNodes;
+    const edges = body.edges || initialEdges;
+
     const workflow = await prisma.workflow.create({
       data: {
         name,
         userId: dbUser.id,
-        nodes: initialNodes,
-        edges: initialEdges,
+        nodes,
+        edges,
       },
     });
 

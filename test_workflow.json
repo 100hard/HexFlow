@@ -1,0 +1,52 @@
+{
+  "name": "Super AI Copywriter Workflow",
+  "nodes": [
+    {
+      "id": "node-request-inputs",
+      "type": "requestInputs",
+      "position": { "x": 80, "y": 150 },
+      "deletable": false,
+      "data": {
+        "fields": [
+          {
+            "id": "field-text-0",
+            "type": "text_field",
+            "name": "text_field",
+            "value": "Product: Wireless Bluetooth Headphones. Features: Noise cancellation, 30-hour battery, foldable design."
+          }
+        ]
+      }
+    },
+    {
+      "id": "node-gemini-test",
+      "type": "gemini",
+      "position": { "x": 550, "y": 150 },
+      "data": {
+        "prompt": "Create an amazing tagline for this product."
+      }
+    },
+    {
+      "id": "node-response",
+      "type": "response",
+      "position": { "x": 1050, "y": 150 },
+      "deletable": false,
+      "data": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "source": "node-request-inputs",
+      "sourceHandle": "field-text-0",
+      "target": "node-gemini-test",
+      "targetHandle": "prompt"
+    },
+    {
+      "id": "edge-2",
+      "source": "node-gemini-test",
+      "sourceHandle": "outputResponse",
+      "target": "node-response",
+      "targetHandle": "result"
+    }
+  ]
+}
