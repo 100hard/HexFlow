@@ -1,4 +1,4 @@
-# 🚀 NextFlow — AI Workflow Automation Dashboard
+# NextFlow — AI Workflow Automation Dashboard
 
 **NextFlow** is a premium, high-fidelity interactive workflow canvas and automation dashboard inspired by the state-of-the-art aesthetics and functional architecture of platforms like *Galaxy.ai* and *Magica Flow*. 
 
@@ -6,21 +6,21 @@ Built on a robust Next.js serverless framework and dynamic React Flow layout can
 
 ---
 
-## 🔗 Submission Links
+## Submission Links
 
-*   **⚡ Live Demo URL:** [https://nextflow-one-pi.vercel.app](https://nextflow-one-pi.vercel.app)
-*   **🎥 Walkthrough & Demo Video (3-5 min):** [Google Drive Walkthrough](https://drive.google.com/file/d/1Arun1eGecyj95KcQ0_WYoRthiDIDlxdU/view?usp=drivesdk)
-*   **📂 Private GitHub Repo:** [https://github.com/100hard/nextflow](https://github.com/100hard/nextflow) *(Access granted to: `bluerocketinfo@gmail.com`)*
+*   **Live Demo URL:** [https://nextflow-one-pi.vercel.app](https://nextflow-one-pi.vercel.app)
+*   **Walkthrough & Demo Video (3-5 min):** [Google Drive Walkthrough](https://drive.google.com/file/d/1Arun1eGecyj95KcQ0_WYoRthiDIDlxdU/view?usp=drivesdk)
+*   **Private GitHub Repo:** [https://github.com/100hard/nextflow](https://github.com/100hard/nextflow) *(Access granted to: `bluerocketinfo@gmail.com`)*
 
 ---
 
-## ✨ Features & Capabilities
+## Features & Capabilities
 
-### 1. 🛡️ User Authentication & Guardrails
+### 1. User Authentication & Guardrails
 *   **Full Session Integration:** Secure access paths protected using **Clerk Middleware** on all dashboard endpoints and workspace routes.
 *   **Seamless Auth Lifecycles:** Elegant custom login, session token validation, and account state syncing.
 
-### 2. 📊 Interactive Workspace Canvas & Building Blocks
+### 2. Interactive Workspace Canvas & Building Blocks
 *   **Dynamic Custom Nodes:** Drag, connect, configure, and execute four granular node architectures:
     *   **Request-Inputs:** Dynamic input parameters (e.g. `image_field`) for execution ingestion.
     *   **Crop Image:** Aspect-ratio adjustments and crop operations.
@@ -28,25 +28,25 @@ Built on a robust Next.js serverless framework and dynamic React Flow layout can
     *   **Response:** Final execution output hubs.
 *   **Micro-Animations & Visual State Indicators:** Pulse animations, glow outlines, run loaders, and glowing transition lines dynamically highlight current canvas execution routes.
 
-### 3. 📂 Transloadit Image Upload Integration
+### 3. Transloadit Image Upload Integration
 *   **Zero-Delay Local Uploads:** Interactive file-select handlers built directly inside the `Request-Inputs` node interface, supporting image file previews and immediate file system synchronization.
 
-### 4. ⚡ Advanced Graph Execution Schemes
+### 4. Advanced Graph Execution Schemes
 *   **End-to-End Run:** Pulses connection paths and schedules node outputs in logical execution order.
 *   **Single-Node Run:** Granular, isolated play execution triggering from inside individual nodes (with full loaders and active state highlights).
 *   **Multi-Select Run:** Execute specific subsets of connected node graphs.
 
-### 5. 📜 Detailed Run History & Auditing
+### 5. Detailed Run History & Auditing
 *   **Granular Trace Audit logs:** The slide-out history panel lists all historical executions, scoped beautifully by **`FULL`**, **`SINGLE`**, or **`PARTIAL`** runs.
 *   **Expandable Diagnostics:** Expand execution traces to inspect parameters, connection values, runtimes, and exact inputs/outputs.
 
-### 6. 🌐 Portability (JSON Export & Import)
+### 6. Portability (JSON Export & Import)
 *   **Dynamic Workspaces:** Export canvas workflows to lightweight, structured JSON files.
 *   **Configuration Hydration:** Import files to instantly recreate the entire canvas configuration, complete with custom node titles, parameters, coordinates, and edge bounds.
 
 ---
 
-## 🛠️ Architecture & Tech Stack
+## Architecture & Tech Stack
 
 *   **Frontend Framework:** Next.js 15 (App Router, Webpack engine)
 *   **Interactive Canvas:** `@xyflow/react` (React Flow layout controller)
@@ -58,7 +58,7 @@ Built on a robust Next.js serverless framework and dynamic React Flow layout can
 
 ---
 
-## 🚀 How to Run Locally
+## How to Run Locally
 
 ### 1. Clone the repository
 ```bash
@@ -95,7 +95,7 @@ Open `http://localhost:3001` (or your terminal's active dev port) in your browse
 
 ---
 
-## 🧪 Build Validation
+## Build Validation
 This project is configured to run `prisma generate` before Next.js compiles, making it fully deployment-ready. The build executes flawlessly with exit status `0`:
 ```bash
 npm run build
