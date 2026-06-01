@@ -14,7 +14,7 @@ import {
   type Connection,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { ArrowLeft, Play, Loader2, Save, Cloud, Check, Undo2, Redo2, Download, Upload, History, Calculator, Wallet } from "lucide-react";
+import { ArrowLeft, Play, Loader2, Save, Cloud, Check, Undo2, Redo2, Download, Upload, History, Calculator, Wallet, Map, Minimize2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useMemo, useEffect, useState } from "react";
@@ -46,6 +46,7 @@ export default function WorkflowCanvasPage() {
   // Execution animation tracking states
   const [isExecuting, setIsExecuting] = useState(false);
   const [executingNodeId, setExecutingNodeId] = useState<string | null>(null);
+  const [isMinimapOpen, setIsMinimapOpen] = useState(false);
 
   // Filter runs by active tab (UI vs API) and status filter
   const filteredRuns = useMemo(() => {
@@ -756,31 +757,94 @@ export default function WorkflowCanvasPage() {
                 }}
               />
 
-              {/* MiniMap bottom-right */}
-              <MiniMap
-                style={{
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "8px",
-                  background: "#ffffff",
-                  overflow: "hidden",
-                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
-                }}
-                nodeColor={(node) => {
-                  switch (node.type) {
-                    case "requestInputs":
-                      return "#f97316";
-                    case "response":
-                      return "#3b82f6";
-                    case "gemini":
-                      return "#eab308";
-                    case "cropImage":
-                      return "#ec4899";
-                    default:
-                      return "#e5e7eb";
-                  }
-                }}
-                maskColor="rgba(240, 240, 240, 0.6)"
-              />
+              {/* Toggleable Minimap bottom-right */}
+              {!isMinimapOpen ? (
+                <button
+                  type="button"
+                  onClick={() => setIsMinimapOpen(true)}
+                  className="nodrag"
+                  style={{
+                    position: "absolute",
+                    bottom: "20px",
+                    right: "20px",
+                    width: "42px",
+                    height: "42px",
+                    borderRadius: "10px",
+                    background: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#475569",
+                    cursor: "pointer",
+                    zIndex: 100,
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "#ffffff")}
+                  title="Open Minimap"
+                >
+                  <Map size={18} />
+                </button>
+              ) : (
+                <div style={{ position: "absolute", bottom: "20px", right: "20px", zIndex: 100 }}>
+                  <div style={{ position: "relative" }}>
+                    <MiniMap
+                      style={{
+                        border: 0,
+                        borderRadius: "12px",
+                        background: "#0c0c0e", // very dark zinc/black
+                        width: "200px",
+                        height: "135px",
+                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.3)",
+                        margin: 0,
+                      }}
+                      nodeColor={(node) => {
+                        switch (node.type) {
+                          case "requestInputs":
+                            return "#27272a"; // dark grey square
+                          case "gemini":
+                            return "#22c55e"; // green rectangle
+                          case "cropImage":
+                            return "#3b82f6"; // blue rectangle
+                          case "response":
+                            return "#27272a"; // dark grey square
+                          default:
+                            return "#3f3f46";
+                        }
+                      }}
+                      maskColor="rgba(24, 24, 27, 0.7)"
+                    />
+                    {/* Collapse button on the top-right of the minimap */}
+                    <button
+                      type="button"
+                      onClick={() => setIsMinimapOpen(false)}
+                      className="nodrag"
+                      style={{
+                        position: "absolute",
+                        top: "-10px",
+                        right: "-10px",
+                        width: "22px",
+                        height: "22px",
+                        borderRadius: "50%",
+                        background: "#ffffff",
+                        border: "1px solid #1c1917",
+                        boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#1c1917",
+                        cursor: "pointer",
+                        zIndex: 101,
+                        padding: 0,
+                      }}
+                    >
+                      <Minimize2 size={11} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </ReactFlow>
           </div>
 
