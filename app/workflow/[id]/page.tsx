@@ -14,7 +14,7 @@ import {
   type Connection,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { ArrowLeft, Play, Loader2, Save, Cloud, Check, Undo2, Redo2, Download, Upload, History } from "lucide-react";
+import { ArrowLeft, Play, Loader2, Save, Cloud, Check, Undo2, Redo2, Download, Upload, History, Calculator, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useMemo, useEffect, useState } from "react";
@@ -626,169 +626,79 @@ export default function WorkflowCanvasPage() {
           {/* Right Side: Action Run Play button */}
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             
-            {/* Undo / Redo Controls */}
-            <div style={{ display: "flex", alignItems: "center", border: "1px solid #e5e7eb", borderRadius: "6px", overflow: "hidden", background: "#ffffff" }}>
-              <button
-                onClick={undo}
-                disabled={past.length === 0}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "32px",
-                  height: "32px",
-                  border: 0,
-                  background: "transparent",
-                  color: past.length === 0 ? "#cbd5e1" : "#334155",
-                  cursor: past.length === 0 ? "not-allowed" : "pointer",
-                  transition: "background 0.15s ease",
-                }}
-                onMouseEnter={(e) => {
-                  if (past.length > 0) e.currentTarget.style.background = "#f8fafc";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "transparent";
-                }}
-                title="Undo (Ctrl+Z)"
-              >
-                <Undo2 size={13} />
-              </button>
-              <div style={{ width: "1px", height: "16px", background: "#e2e8f0" }} />
-              <button
-                onClick={redo}
-                disabled={future.length === 0}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "32px",
-                  height: "32px",
-                  border: 0,
-                  background: "transparent",
-                  color: future.length === 0 ? "#cbd5e1" : "#334155",
-                  cursor: future.length === 0 ? "not-allowed" : "pointer",
-                  transition: "background 0.15s ease",
-                }}
-                onMouseEnter={(e) => {
-                  if (future.length > 0) e.currentTarget.style.background = "#f8fafc";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "transparent";
-                }}
-                title="Redo (Ctrl+Y)"
-              >
-                <Redo2 size={13} />
-              </button>
-            </div>
-
-            {/* Import / Export Controls */}
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <button
-                onClick={exportWorkflowToJSON}
-                style={{
-                  display: "inline-flex",
-                  height: "32px",
-                  alignItems: "center",
-                  gap: "6px",
-                  borderRadius: "6px",
-                  border: "1px solid #e2e8f0",
-                  background: "#ffffff",
-                  padding: "0 10px",
-                  fontSize: "12px",
-                  fontWeight: 500,
-                  color: "#334155",
-                  cursor: "pointer",
-                  transition: "background 0.15s ease",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "#ffffff")}
-                title="Export configuration JSON"
-              >
-                <Download size={12} />
-                <span>Export</span>
-              </button>
-
-              <label
-                style={{
-                  display: "inline-flex",
-                  height: "32px",
-                  alignItems: "center",
-                  gap: "6px",
-                  borderRadius: "6px",
-                  border: "1px solid #e2e8f0",
-                  background: "#ffffff",
-                  padding: "0 10px",
-                  fontSize: "12px",
-                  fontWeight: 500,
-                  color: "#334155",
-                  cursor: "pointer",
-                  transition: "background 0.15s ease",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "#ffffff")}
-                title="Import configuration JSON"
-              >
-                <Upload size={12} />
-                <span>Import</span>
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={importWorkflowFromJSON}
-                  style={{ display: "none" }}
-                />
-              </label>
-            </div>
-
-            <button
-              onClick={() => saveWorkflowState(nodes, edges)}
+            {/* Est parameter box */}
+            <div
               style={{
                 display: "inline-flex",
                 height: "32px",
                 alignItems: "center",
-                gap: "6px",
-                borderRadius: "6px",
-                border: "1px solid #e5e7eb",
+                gap: "8px",
+                borderRadius: "8px",
+                border: "1px solid #e2e8f0",
                 background: "#ffffff",
                 padding: "0 12px",
-                fontSize: "12px",
+                fontSize: "13px",
                 fontWeight: 500,
-                color: "#374151",
-                cursor: "pointer",
-                transition: "background 0.15s ease",
+                color: "#6b7280",
+                boxShadow: "0 1px 2px rgba(0, 0, 0, 0.02)",
               }}
             >
-              <Save size={12} />
-              <span>Force save</span>
-            </button>
+              <Calculator size={14} style={{ color: "#4b5563" }} />
+              <span>
+                Est <strong style={{ color: "#1f2937", fontWeight: 600, marginLeft: "4px", marginRight: "4px" }}>1.72</strong> M
+              </span>
+            </div>
+
+            {/* Bal parameter box */}
+            <div
+              style={{
+                display: "inline-flex",
+                height: "32px",
+                alignItems: "center",
+                gap: "8px",
+                borderRadius: "8px",
+                border: "1px solid #e2e8f0",
+                background: "#ffffff",
+                padding: "0 12px",
+                fontSize: "13px",
+                fontWeight: 500,
+                color: "#6b7280",
+                boxShadow: "0 1px 2px rgba(0, 0, 0, 0.02)",
+              }}
+            >
+              <Wallet size={14} style={{ color: "#4b5563" }} />
+              <span>
+                Bal <strong style={{ color: "#1f2937", fontWeight: 600, marginLeft: "4px", marginRight: "4px" }}>0.00</strong> M
+              </span>
+            </div>
+
+            {/* Play triangle button */}
             <button
               onClick={handleExecuteWorkflow}
               disabled={isExecuting}
               style={{
                 display: "inline-flex",
+                width: "48px",
                 height: "32px",
                 alignItems: "center",
-                gap: "6px",
-                borderRadius: "6px",
+                justifyContent: "center",
+                borderRadius: "8px",
                 border: 0,
-                background: isExecuting ? "#818cf8" : "#4f46e5",
-                padding: "0 12px",
-                fontSize: "12px",
-                fontWeight: 500,
+                background: isExecuting ? "#818cf8" : "#5046e6",
                 color: "#ffffff",
                 cursor: isExecuting ? "not-allowed" : "pointer",
-                boxShadow: "0 1px 2px rgba(79, 70, 229, 0.2)",
+                boxShadow: "0 1px 2px rgba(80, 70, 230, 0.2)",
                 transition: "background 0.15s ease",
               }}
             >
               {isExecuting ? (
-                <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
+                <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
               ) : (
-                <Play size={12} fill="#ffffff" />
+                <Play size={14} fill="#ffffff" style={{ color: "#ffffff" }} />
               )}
-              <span>{isExecuting ? "Running..." : "Run"}</span>
             </button>
 
-            {/* Execution History Circular Button */}
+            {/* Execution History Button */}
             <button
               onClick={() => setIsHistoryOpen(!isHistoryOpen)}
               style={{
@@ -797,10 +707,10 @@ export default function WorkflowCanvasPage() {
                 height: "32px",
                 alignItems: "center",
                 justifyContent: "center",
-                borderRadius: "6px",
-                border: "1px solid #e5e7eb",
+                borderRadius: "8px",
+                border: "1px solid #e2e8f0",
                 background: isHistoryOpen ? "#f1f5f9" : "#ffffff",
-                color: "#475569",
+                color: "#1f2937",
                 cursor: "pointer",
                 transition: "background 0.15s ease",
               }}
@@ -808,7 +718,7 @@ export default function WorkflowCanvasPage() {
               onMouseLeave={(e) => (e.currentTarget.style.background = isHistoryOpen ? "#f1f5f9" : "#ffffff")}
               title="Execution History"
             >
-              <History size={14} />
+              <History size={16} />
             </button>
           </div>
         </header>
