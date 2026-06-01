@@ -91,8 +91,7 @@ export async function POST(request: Request) {
         sourceHandle: "field-text-0",
         target: "node-response",
         targetHandle: "result",
-        animated: true,
-        style: { stroke: "#818cf8", strokeWidth: 2 }, // premium animated purple edge
+        style: { stroke: "#818cf8", strokeWidth: 2.5 },
       },
     ];
 

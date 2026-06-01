@@ -458,7 +458,6 @@ export default function WorkflowCanvasPage() {
       const newEdge: Edge = {
         ...connection,
         id: `edge-${Date.now()}`,
-        animated: true,
         style: { stroke: strokeColor, strokeWidth: 2.5 },
       };
 
