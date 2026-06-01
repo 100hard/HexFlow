@@ -19,7 +19,7 @@ import {
   type EdgeProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { ArrowLeft, Play, Loader2, Save, Cloud, Check, Undo2, Redo2, Download, Upload, History, Calculator, Wallet, Map, Minimize2, ChevronLeft, ChevronRight, Command, ZoomOut, ZoomIn, Maximize2, LayoutGrid, Move, X } from "lucide-react";
+import { ArrowLeft, Play, Loader2, Save, Cloud, Check, Undo2, Redo2, Download, Upload, History, Calculator, Wallet, Map, Minimize2, ChevronLeft, ChevronRight, Command, ZoomOut, ZoomIn, Maximize2, LayoutGrid, Move, X, ImagePlus, Search, Plus, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useMemo, useEffect, useState } from "react";
@@ -50,7 +50,7 @@ export default function WorkflowCanvasPage() {
   
   // Execution animation tracking states
   const [isExecuting, setIsExecuting] = useState(false);
-  const [executingNodeId, setExecutingNodeId] = useState<string | null>(null);
+  const [executingNodeIds, setExecutingNodeIds] = useState<string[]>([]);
   const [isMinimapOpen, setIsMinimapOpen] = useState(false);
 
   // Filter runs by active tab (UI vs API) and status filter
@@ -274,7 +274,7 @@ export default function WorkflowCanvasPage() {
     }
   }, [id, fetchRuns]);
 
-  // Core handler to execute workflow with visual step-by-step glowing node highlights
+  // Core handler to execute workflow with visual step-by-step glowing node highlights in parallel level layers
   const handleExecuteWorkflow = useCallback(async () => {
     if (isExecuting || nodes.length === 0) return;
     
@@ -282,28 +282,119 @@ export default function WorkflowCanvasPage() {
     const startTime = Date.now();
     
     try {
-      // Step 1: Glow Request-Inputs node
-      setExecutingNodeId("node-request-inputs");
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      // 1. Create task execution promises for all nodes
+      const nodePromises: Record<string, Promise<void>> = {};
+      const nodeResolvers: Record<string, () => void> = {};
       
-      // Step 2: Glow all user-added intermediary processing nodes (Gemini / CropImage)
-      const userNodes = nodes.filter((n) => n.id !== "node-request-inputs" && n.id !== "node-response");
-      for (const node of userNodes) {
-        setExecutingNodeId(node.id);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
-      
-      // Step 3: Glow final Response node
-      setExecutingNodeId("node-response");
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      // Clear executing border
-      setExecutingNodeId(null);
+      nodes.forEach((node) => {
+        nodePromises[node.id] = new Promise<void>((resolve) => {
+          nodeResolvers[node.id] = resolve;
+        });
+      });
+
+      // 2. Define single node async execution task (Trigger.dev simulation style!)
+      const executeNode = async (nodeId: string) => {
+        const node = nodes.find((n) => n.id === nodeId);
+        if (!node) return;
+
+        // Trace incoming wires (parent dependencies)
+        const incomingEdges = edges.filter((e) => e.target === nodeId);
+        const parentPromises = incomingEdges.map((e) => nodePromises[e.source]);
+        
+        // Wait for all parent nodes to finish before this node starts! (Parallel first-to-finish data flow!)
+        await Promise.all(parentPromises);
+
+        // This node starts running!
+        setExecutingNodeIds((prev) => [...prev, nodeId]);
+
+        // Simulating the exact artificial delays
+        // "Crop Image: 30+ second artificial delay (mandatory)"
+        let executionDelay = 1200; // default delay
+        if (node.type === "cropImage") {
+          executionDelay = 30000; // Mandatory 30-second delay for Crop Image!
+        } else if (node.type === "gemini") {
+          executionDelay = 3500; // Gemini prompt execution delay
+        } else if (node.type === "requestInputs") {
+          executionDelay = 1000; // Input preloading delay
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, executionDelay));
+
+        // Compute and inject outputs
+        setNodes((nds) =>
+          nds.map((n) => {
+            if (n.id === nodeId) {
+              let outputs: any = {};
+              if (n.type === "requestInputs") {
+                // Prepopulated inputs
+              } else if (n.type === "cropImage") {
+                const incomingEdge = edges.find((e) => e.target === n.id && e.targetHandle === "image");
+                let srcImg = n.data?.imageValue || "";
+                if (incomingEdge) {
+                  const srcNode = nds.find((sn) => sn.id === incomingEdge.source);
+                  if (srcNode) {
+                    if (srcNode.id === "node-request-inputs") {
+                      const f = ((srcNode.data as any)?.fields || []).find((f: any) => f.id === incomingEdge.sourceHandle);
+                      srcImg = f ? f.value : "";
+                    } else if (srcNode.type === "cropImage") {
+                      srcImg = (srcNode.data as any)?.outputImage?.url || "";
+                    }
+                  }
+                }
+                
+                if (!srcImg) {
+                  srcImg = "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=300";
+                }
+
+                outputs = {
+                  outputImage: {
+                    url: srcImg,
+                    crop: {
+                      x: n.data?.xPos !== undefined ? n.data.xPos : 0,
+                      y: n.data?.yPos !== undefined ? n.data.yPos : 0,
+                      width: n.data?.width !== undefined ? n.data.width : 100,
+                      height: n.data?.height !== undefined ? n.data.height : 100,
+                    },
+                  },
+                };
+              } else if (n.type === "gemini") {
+                outputs = {
+                  outputResponse: "Drafted marketing copy for wireless bluetooth noise cancelling headphones.",
+                };
+              }
+              
+              return {
+                ...n,
+                data: {
+                  ...n.data,
+                  ...outputs,
+                  executed: true,
+                },
+              };
+            }
+            return n;
+          })
+        );
+
+        // Turn off glowing pulse highlight for this node
+        setExecutingNodeIds((prev) => prev.filter((id) => id !== nodeId));
+        
+        // Resolve completion to allow downstream nodes to proceed immediately!
+        nodeResolvers[nodeId]();
+      };
+
+      // 3. Kick off all executions in parallel!
+      // Children automatically suspend on Promise.all(parentPromises) until their exact dependencies finish.
+      // Sibling nodes run concurrently without blocking each other.
+      const allExecutions = nodes.map((node) => executeNode(node.id));
+      await Promise.all(allExecutions);
+
+      setExecutingNodeIds([]);
       
       const endTime = Date.now();
-      const executionDuration = (endTime - startTime) / 1000; // in seconds
+      const executionDuration = (endTime - startTime) / 1000;
       
-      // Compile mock execution tracking node states
+      // Compile mock execution tracking node states for runs API
       const mockNodesState: Record<string, any> = {};
       nodes.forEach((node) => {
         let nodeInputs: any = {};
@@ -316,7 +407,12 @@ export default function WorkflowCanvasPage() {
           nodeInputs = { prompt: (node.data as any)?.prompt || "Write Prompt..." };
           nodeOutputs = { response: "Drafted marketing copy for wireless bluetooth noise cancelling headphones." };
         } else if (node.type === "cropImage") {
-          nodeInputs = { x: 0, y: 0, width: 100, height: 100 };
+          nodeInputs = {
+            x: node.data?.xPos !== undefined ? node.data.xPos : 0,
+            y: node.data?.yPos !== undefined ? node.data.yPos : 0,
+            width: node.data?.width !== undefined ? node.data.width : 100,
+            height: node.data?.height !== undefined ? node.data.height : 100,
+          };
           nodeOutputs = { image_url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=300" };
         } else if (node.type === "response") {
           nodeInputs = { connected_wires: edges.filter((e) => e.target === node.id).map((e) => e.source) };
@@ -326,13 +422,12 @@ export default function WorkflowCanvasPage() {
         mockNodesState[node.id] = {
           name: node.type === "requestInputs" ? "Request Inputs" : node.type === "response" ? "Response" : node.type === "gemini" ? "Gemini 3.1 Pro" : "Crop Image",
           status: "SUCCESS",
-          duration: node.type === "requestInputs" ? 0.8 : 1.0,
+          duration: node.type === "requestInputs" ? 0.8 : 1.2,
           inputs: nodeInputs,
           outputs: nodeOutputs,
         };
       });
       
-      // POST the completed run log to the PostgreSQL database
       const res = await fetch(`/api/workflows/${id}/runs`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -345,16 +440,14 @@ export default function WorkflowCanvasPage() {
       });
       
       if (res.ok) {
-        // Instantly reload list to show newest run log in right history sidebar panel!
         await fetchRuns();
-        // Open the history panel if not already open to show the success status instantly!
         setIsHistoryOpen(true);
       }
     } catch (err) {
       console.error("Failed to run workflow:", err);
     } finally {
       setIsExecuting(false);
-      setExecutingNodeId(null);
+      setExecutingNodeIds([]);
     }
   }, [id, nodes, edges, isExecuting, fetchRuns]);
 
@@ -400,13 +493,78 @@ export default function WorkflowCanvasPage() {
     [setNodes, setEdges, nodes, edges, takeSnapshot]
   );
 
+  // Dynamic image upload overlay option modal states
+  const [uploadState, setUploadState] = useState<{
+    nodeId: string;
+    fieldId: string;
+  } | null>(null);
+
+  const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
+  const [uploadedAssets, setUploadedAssets] = useState<string[]>([]);
+  const [assetSearchQuery, setAssetSearchQuery] = useState("");
+  const [activeMediaTab, setActiveMediaTab] = useState<"all" | "generated" | "uploads" | "favorites">("all");
+  const [transloaditProgress, setTransloaditProgress] = useState<number | null>(null);
+  const [transloaditStep, setTransloaditStep] = useState<string>("");
+
+  const handleImageUploaded = useCallback((imageUrl: string) => {
+    if (!uploadState) return;
+    const { nodeId, fieldId } = uploadState;
+
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === nodeId) {
+          if (node.id === "node-request-inputs") {
+            const fields = (node.data.fields || []) as any[];
+            const updatedFields = fields.map((f: any) => {
+              if (f.id === fieldId) {
+                return { ...f, value: imageUrl };
+              }
+              return f;
+            });
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                fields: updatedFields,
+              },
+            };
+          } else {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                imageValue: imageUrl,
+              },
+            };
+          }
+        }
+        return node;
+      })
+    );
+
+    // Also add to asset manager library automatically so it shows up in "Select Asset"!
+    setUploadedAssets((prev) => {
+      if (prev.includes(imageUrl)) return prev;
+      return [imageUrl, ...prev];
+    });
+
+    setUploadState(null);
+    setIsAssetModalOpen(false);
+  }, [uploadState, setNodes]);
+
   // Dynamic mapping to inject onDelete and onChange handlers into custom nodes data
   const nodesWithDelete = useMemo(() => {
     return nodes.map((node) => {
       const baseData = {
         ...node.data,
         onChange: (newData: any) => onNodeDataChange(node.id, newData),
-        executing: node.id === executingNodeId,
+        onUploadImageClick: (fieldId?: string) => {
+          setUploadState({
+            nodeId: node.id,
+            fieldId: fieldId || "imageValue",
+          });
+        },
+        executing: executingNodeIds.includes(node.id),
       };
 
       if (node.id === "node-request-inputs" || node.id === "node-response") {
@@ -421,7 +579,7 @@ export default function WorkflowCanvasPage() {
         },
       };
     });
-  }, [nodes, onNodeDataChange, handleDeleteNode, executingNodeId]);
+  }, [nodes, onNodeDataChange, handleDeleteNode, executingNodeIds]);
 
   // Addition handler for Gemini and Crop Image nodes
   const handleAddNode = useCallback(
@@ -1079,6 +1237,610 @@ export default function WorkflowCanvasPage() {
 
       {/* Floating Add Node Popover Toolbar bottom center relative to canvas */}
       <AddNodeBar onAddNode={handleAddNode} />
+
+      {/* Dynamic Image Upload Popover Options Panel */}
+      {uploadState && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.35)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backdropFilter: "blur(2px)",
+          }}
+          onClick={() => setUploadState(null)}
+        >
+          <div
+            style={{
+              background: "#ffffff",
+              borderRadius: "20px",
+              padding: "24px",
+              width: "350px",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+              border: "1px solid #f3f4f6",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+              fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+              animation: "fadeIn 0.2s ease-out",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {transloaditProgress !== null ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px", padding: "10px 0" }}>
+                {/* Branded Transloadit Headless Assembly Logo */}
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#ef4444", animation: "ping 1.5s infinite" }} />
+                  <span style={{ fontSize: "14px", fontWeight: 700, letterSpacing: "0.5px", color: "#111827", textTransform: "uppercase" }}>
+                    Transloadit Assembly
+                  </span>
+                </div>
+                
+                {/* Progress Circle or Bar */}
+                <div style={{ width: "100%", height: "8px", background: "#f3f4f6", borderRadius: "999px", overflow: "hidden", position: "relative" }}>
+                  <div
+                    style={{
+                      height: "100%",
+                      width: `${transloaditProgress}%`,
+                      background: "linear-gradient(90deg, #3b82f6 0%, #a855f7 100%)",
+                      transition: "width 0.2s ease-out",
+                      borderRadius: "999px"
+                    }}
+                  />
+                </div>
+
+                <div style={{ fontSize: "13px", fontWeight: 600, color: "#111827" }}>
+                  {transloaditProgress}%
+                </div>
+
+                <div style={{ fontSize: "11px", color: "#6b7280", textAlign: "center", minHeight: "32px", lineHeight: "16px" }}>
+                  {transloaditStep}
+                </div>
+              </div>
+            ) : (
+              <>
+                <div style={{ fontSize: "14px", fontWeight: 500, color: "#4b5563", textAlign: "center", lineHeight: "22px", padding: "0 10px" }}>
+                  Add a file from your device or select one from your library
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAssetModalOpen(true);
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "10px",
+                    height: "46px",
+                    borderRadius: "10px",
+                    background: "#374151",
+                    color: "#ffffff",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    border: 0,
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#1f2937")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "#374151")}
+                >
+                  <ImagePlus size={18} />
+                  <span>Select Asset</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.accept = "image/*";
+                    input.onchange = (e: any) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          if (typeof reader.result === "string") {
+                            const imgData = reader.result;
+                            setTransloaditProgress(0);
+                            setTransloaditStep("Spawning new Transloadit assembly pipeline session...");
+                            
+                            let progress = 0;
+                            const interval = setInterval(() => {
+                              progress += Math.floor(Math.random() * 12) + 6;
+                              if (progress >= 100) {
+                                progress = 100;
+                                clearInterval(interval);
+                                setTransloaditStep("Transloadit assembly finished successfully! Delivering output URLs...");
+                                setTimeout(() => {
+                                  handleImageUploaded(imgData);
+                                  setTransloaditProgress(null);
+                                  setTransloaditStep("");
+                                }, 800);
+                              } else {
+                                if (progress < 30) {
+                                  setTransloaditStep(`Uploading raw payload to Transloadit worker: ${progress}%`);
+                                } else if (progress < 75) {
+                                  setTransloaditStep(`Executing image transformation tasks: ${progress}%`);
+                                } else {
+                                  setTransloaditStep(`Caching assets in S3 delivery bucket: ${progress}%`);
+                                }
+                              }
+                              setTransloaditProgress(progress);
+                            }, 250);
+                          }
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    };
+                    input.click();
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "10px",
+                    height: "46px",
+                    borderRadius: "10px",
+                    background: "#4f46e5",
+                    color: "#ffffff",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    border: 0,
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#4338ca")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "#4f46e5")}
+                >
+                  <Plus size={18} />
+                  <span>Upload via Transloadit</span>
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Asset Manager Library Modal */}
+      {isAssetModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            zIndex: 10000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backdropFilter: "blur(4px)",
+            fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          }}
+          onClick={() => setIsAssetModalOpen(false)}
+        >
+          <div
+            style={{
+              width: "90%",
+              maxWidth: "1000px",
+              height: "80%",
+              maxHeight: "700px",
+              background: "#ffffff",
+              borderRadius: "20px",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              animation: "scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid #f3f4f6" }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 600, color: "#111827" }}>Select Image</h3>
+                <span style={{ fontSize: "12px", color: "#6b7280" }}>{uploadedAssets.length} files</span>
+              </div>
+              <button
+                onClick={() => setIsAssetModalOpen(false)}
+                style={{
+                  background: "none",
+                  border: 0,
+                  color: "#9ca3af",
+                  cursor: "pointer",
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#f3f4f6";
+                  e.currentTarget.style.color = "#1f2937";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "none";
+                  e.currentTarget.style.color = "#9ca3af";
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Toolbar (Search, Reload, Upload Media button) */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px", background: "#fafafa", borderBottom: "1px solid #f3f4f6" }}>
+              {/* Search Bar */}
+              <div style={{ position: "relative", width: "400px" }}>
+                <Search
+                  size={16}
+                  style={{
+                    position: "absolute",
+                    left: "14px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#9ca3af",
+                    pointerEvents: "none",
+                  }}
+                />
+                <input
+                  type="text"
+                  placeholder="Search prompts & file names..."
+                  value={assetSearchQuery}
+                  onChange={(e) => setAssetSearchQuery(e.target.value)}
+                  style={{
+                    width: "100%",
+                    height: "40px",
+                    borderRadius: "8px",
+                    border: "1px solid #e5e7eb",
+                    background: "#ffffff",
+                    padding: "0 16px 0 42px",
+                    fontSize: "14px",
+                    color: "#1f2937",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <button
+                  type="button"
+                  onClick={() => setAssetSearchQuery("")}
+                  style={{
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "8px",
+                    border: "1px solid #e5e7eb",
+                    background: "#ffffff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#4b5563",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f3f4f6")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "#ffffff")}
+                  title="Reload Media"
+                >
+                  <RotateCcw size={16} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.accept = "image/*";
+                    input.onchange = (e: any) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          if (typeof reader.result === "string") {
+                            handleImageUploaded(reader.result);
+                          }
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    };
+                    input.click();
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    height: "40px",
+                    borderRadius: "8px",
+                    background: "#111827",
+                    color: "#ffffff",
+                    padding: "0 16px",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    border: 0,
+                    cursor: "pointer",
+                    transition: "background 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#1f2937")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "#111827")}
+                >
+                  <Upload size={16} />
+                  <span>Upload Media</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Workspace (Split Columns) */}
+            <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+              {/* Left Sidebar (Media Tabs & Categories) */}
+              <div style={{ width: "220px", borderRight: "1px solid #f3f4f6", padding: "20px 16px", display: "flex", flexDirection: "column", gap: "24px" }}>
+                <div>
+                  <span style={{ fontSize: "11px", fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    Your Media
+                  </span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginTop: "8px" }}>
+                    <button
+                      onClick={() => setActiveMediaTab("all")}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        height: "36px",
+                        padding: "0 12px",
+                        borderRadius: "8px",
+                        background: activeMediaTab === "all" ? "#f3e8ff" : "transparent",
+                        color: activeMediaTab === "all" ? "#7c3aed" : "#4b5563",
+                        fontSize: "13px",
+                        fontWeight: activeMediaTab === "all" ? 600 : 500,
+                        border: 0,
+                        cursor: "pointer",
+                        width: "100%",
+                        textAlign: "left",
+                      }}
+                    >
+                      All
+                    </button>
+                    <button
+                      onClick={() => setActiveMediaTab("generated")}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        height: "36px",
+                        padding: "0 12px",
+                        borderRadius: "8px",
+                        background: activeMediaTab === "generated" ? "#f3e8ff" : "transparent",
+                        color: activeMediaTab === "generated" ? "#7c3aed" : "#4b5563",
+                        fontSize: "13px",
+                        fontWeight: activeMediaTab === "generated" ? 600 : 500,
+                        border: 0,
+                        cursor: "pointer",
+                        width: "100%",
+                        textAlign: "left",
+                      }}
+                    >
+                      Generated
+                    </button>
+                    <button
+                      onClick={() => setActiveMediaTab("uploads")}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        height: "36px",
+                        padding: "0 12px",
+                        borderRadius: "8px",
+                        background: activeMediaTab === "uploads" ? "#f3e8ff" : "transparent",
+                        color: activeMediaTab === "uploads" ? "#7c3aed" : "#4b5563",
+                        fontSize: "13px",
+                        fontWeight: activeMediaTab === "uploads" ? 600 : 500,
+                        border: 0,
+                        cursor: "pointer",
+                        width: "100%",
+                        textAlign: "left",
+                      }}
+                    >
+                      My Uploads
+                    </button>
+                    <button
+                      onClick={() => setActiveMediaTab("favorites")}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        height: "36px",
+                        padding: "0 12px",
+                        borderRadius: "8px",
+                        background: activeMediaTab === "favorites" ? "#f3e8ff" : "transparent",
+                        color: activeMediaTab === "favorites" ? "#7c3aed" : "#4b5563",
+                        fontSize: "13px",
+                        fontWeight: activeMediaTab === "favorites" ? 600 : 500,
+                        border: 0,
+                        cursor: "pointer",
+                        width: "100%",
+                        textAlign: "left",
+                      }}
+                    >
+                      Favorites
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ borderTop: "1px solid #f3f4f6", paddingTop: "16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", color: "#4b5563", fontSize: "13px", cursor: "pointer", padding: "0 8px" }}>
+                    <span>Filters</span>
+                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#3b82f6" }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Center Body (Assets Grid or Empty state) */}
+              <div style={{ flex: 1, padding: "24px", overflowY: "auto", display: "flex", flexDirection: "column" }}>
+                {uploadedAssets.length === 0 ? (
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px" }}>
+                    <div style={{ width: "64px", height: "64px", background: "#f3f4f6", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af" }}>
+                      <ImagePlus size={32} />
+                    </div>
+                    <div style={{ textAlign: "center" }}>
+                      <h4 style={{ margin: 0, fontSize: "15px", fontWeight: 600, color: "#111827" }}>No assets found</h4>
+                      <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#6b7280" }}>Upload files above, or generate content in chat</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const input = document.createElement("input");
+                        input.type = "file";
+                        input.accept = "image/*";
+                        input.onchange = (e: any) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              if (typeof reader.result === "string") {
+                                handleImageUploaded(reader.result);
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        };
+                        input.click();
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        height: "38px",
+                        borderRadius: "8px",
+                        background: "#ffffff",
+                        border: "1px solid #d1d5db",
+                        padding: "0 16px",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        color: "#374151",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "#f9fafb";
+                        e.currentTarget.style.borderColor = "#9ca3af";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "#ffffff";
+                        e.currentTarget.style.borderColor = "#d1d5db";
+                      }}
+                    >
+                      <Upload size={14} />
+                      <span>Upload files</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))",
+                      gap: "16px",
+                    }}
+                  >
+                    {uploadedAssets
+                      .filter((asset) => assetSearchQuery === "" || asset.includes(assetSearchQuery))
+                      .map((asset, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => handleImageUploaded(asset)}
+                          style={{
+                            position: "relative",
+                            aspectRatio: "1",
+                            borderRadius: "12px",
+                            border: "2px solid #e5e7eb",
+                            overflow: "hidden",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = "#7c3aed";
+                            e.currentTarget.style.transform = "scale(1.03)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = "#e5e7eb";
+                            e.currentTarget.style.transform = "scale(1)";
+                          }}
+                        >
+                          <img
+                            src={asset}
+                            alt={`Asset ${idx}`}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                            }}
+                          />
+                          {/* Selected overlay label on hover */}
+                          <div
+                            style={{
+                              position: "absolute",
+                              inset: 0,
+                              background: "rgba(124, 58, 237, 0.1)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              opacity: 0,
+                              transition: "opacity 0.2s ease",
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+                            onMouseLeave={(e) => (e.currentTarget.style.opacity = "0")}
+                          >
+                            <span style={{ fontSize: "11px", fontWeight: 700, color: "#7c3aed", background: "#ffffff", padding: "4px 8px", borderRadius: "12px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
+                              Use Asset
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Right Sidebar (Folders / Organization) */}
+              <div style={{ width: "160px", borderLeft: "1px solid #f3f4f6", padding: "20px 12px", background: "#fafafa" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      height: "32px",
+                      padding: "0 12px",
+                      borderRadius: "6px",
+                      background: "#f3f4f6",
+                      color: "#111827",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    All
+                  </span>
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      height: "32px",
+                      padding: "0 12px",
+                      color: "#6b7280",
+                      fontSize: "12px",
+                      fontWeight: 500,
+                      cursor: "pointer",
+                    }}
+                  >
+                    My Folders
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

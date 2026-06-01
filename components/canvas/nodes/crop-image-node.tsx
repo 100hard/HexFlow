@@ -1,18 +1,16 @@
 "use client";
 
-import { Handle, Position, useEdges } from "@xyflow/react";
+import { Handle, Position, useEdges, useNodes } from "@xyflow/react";
 import { Coins, Info, Play, RotateCcw, Trash2, Upload, Plus, Maximize2 } from "lucide-react";
 import { useState } from "react";
 
 export function CropImageNode({ id, data, onDelete }: { id: string; data: any; onDelete?: (id: string) => void }) {
-  const [xPos, setXPos] = useState(0);
-  const [yPos, setYPos] = useState(0);
-  const [width, setWidth] = useState(100);
-  const [height, setHeight] = useState(100);
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
 
-  // Dynamic connected handles tracker
+  // Dynamic connected handles and nodes tracker
   const edges = useEdges();
+  const nodes = useNodes();
+
   const isConnected = (handleId: string) => {
     return edges.some((edge) => edge.target === id && edge.targetHandle === handleId);
   };
@@ -23,14 +21,117 @@ export function CropImageNode({ id, data, onDelete }: { id: string; data: any; o
   const widthConnected = isConnected("width");
   const heightConnected = isConnected("height");
 
+  // Dynamic input wire solver
+  const getConnectedInputValue = (handleId: string) => {
+    const incomingEdge = edges.find((edge) => edge.target === id && edge.targetHandle === handleId);
+    if (!incomingEdge) return null;
+
+    const sourceNode = nodes.find((n) => n.id === incomingEdge.source);
+    if (!sourceNode) return null;
+
+    if (sourceNode.type === "requestInputs" || sourceNode.id === "node-request-inputs") {
+      const fields = (sourceNode.data as any)?.fields || [];
+      const field = fields.find((f: any) => f.id === incomingEdge.sourceHandle);
+      return field ? field.value : null;
+    }
+
+    if (sourceNode.type === "cropImage") {
+      return (sourceNode.data as any)?.outputImage || null;
+    }
+
+    if (sourceNode.type === "gemini") {
+      return (sourceNode.data as any)?.outputResponse || null;
+    }
+
+    return null;
+  };
+
+  // State values driven directly by canvas nodes data array for persistent saving
+  const xPos = data?.xPos !== undefined ? data.xPos : 0;
+  const yPos = data?.yPos !== undefined ? data.yPos : 0;
+  const width = data?.width !== undefined ? data.width : 100;
+  const height = data?.height !== undefined ? data.height : 100;
+
+  const setXPos = (val: number) => data?.onChange?.({ xPos: val });
+  const setYPos = (val: number) => data?.onChange?.({ yPos: val });
+  const setWidth = (val: number) => data?.onChange?.({ width: val });
+  const setHeight = (val: number) => data?.onChange?.({ height: val });
+
+  const connectedImage = getConnectedInputValue("image");
+  const activeImage = connectedImage || data?.imageValue;
+
+  const renderImagePreview = (imgData: any) => {
+    if (!imgData) return null;
+    if (typeof imgData === "string") {
+      return (
+        <div style={{ position: "relative", width: "100%", display: "block", overflow: "hidden", borderRadius: "6px" }}>
+          <img
+            src={imgData}
+            alt="Preview"
+            style={{
+              width: "100%",
+              height: "auto",
+              display: "block",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: `${xPos}%`,
+              top: `${yPos}%`,
+              width: `${width}%`,
+              height: `${height}%`,
+              border: "2px solid #a855f7",
+              boxShadow: "0 0 8px rgba(168, 85, 247, 0.7)",
+              borderRadius: "2px",
+              pointerEvents: "none",
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+      );
+    }
+    if (imgData.url && imgData.crop) {
+      const { url, crop } = imgData;
+      const { x, y, width: w, height: h } = crop;
+      return (
+        <div
+          style={{
+            position: "relative",
+            width: "100%",
+            height: "120px",
+            overflow: "hidden",
+            background: "#000000",
+            borderRadius: "6px",
+          }}
+        >
+          <img
+            src={url}
+            alt="Cropped Preview"
+            style={{
+              position: "absolute",
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              transform: `scale(${100 / Math.max(w, 1)}, ${100 / Math.max(h, 1)}) translate(${-x}%, ${-y}%)`,
+              transformOrigin: "top left",
+            }}
+          />
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div
+      className={data?.executing ? "executing-node-glow" : ""}
       style={{
         background: "#ffffff",
-        border: data?.executing ? "2px solid #6366f1" : "1px solid #e2e8f0",
+        border: data?.executing ? "2px solid #a855f7" : "1px solid #e2e8f0",
         borderRadius: "12px",
         boxShadow: data?.executing 
-          ? "0 0 0 4px rgba(99, 102, 241, 0.5), 0 10px 30px rgba(99, 102, 241, 0.3)" 
+          ? "0 0 0 4px rgba(168, 85, 247, 0.4), 0 10px 30px rgba(168, 85, 247, 0.3)" 
           : "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
         width: "380px",
         transition: "all 0.3s ease-in-out",
@@ -116,10 +217,14 @@ export function CropImageNode({ id, data, onDelete }: { id: string; data: any; o
           {/* Reset Button */}
           <button
             onClick={() => {
-              setXPos(0);
-              setYPos(0);
-              setWidth(100);
-              setHeight(100);
+              if (data?.onChange) {
+                data.onChange({
+                  xPos: 0,
+                  yPos: 0,
+                  width: 100,
+                  height: 100,
+                });
+              }
             }}
             type="button"
             style={{
@@ -271,28 +376,78 @@ export function CropImageNode({ id, data, onDelete }: { id: string; data: any; o
               Input Image*
             </span>
             <div style={{ flex: 1 }}>
-              <button
-                type="button"
-                disabled={imageConnected}
-                className="nodrag"
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "8px",
-                  borderRadius: "8px",
-                  border: imageConnected ? "1px dashed #cbd5e1" : "1px dashed #d1d5db",
-                  background: imageConnected ? "#e2e8f0" : "#f5f5f5",
-                  padding: "10px",
-                  fontSize: "12px",
-                  color: imageConnected ? "#94a3b8" : "#6b7280",
-                  cursor: imageConnected ? "not-allowed" : "pointer",
-                }}
-              >
-                <Upload size={14} />
-                <span>{imageConnected ? "Linked via handle" : "Upload image"}</span>
-              </button>
+              {activeImage ? (
+                <div
+                  className="nodrag"
+                  style={{
+                    position: "relative",
+                    width: "100%",
+                    borderRadius: "8px",
+                    overflow: "hidden",
+                    border: "1px solid #e5e7eb",
+                  }}
+                >
+                  {renderImagePreview(activeImage)}
+                  {!imageConnected && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (data.onChange) {
+                          data.onChange({ imageValue: "" });
+                        }
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "8px",
+                        right: "8px",
+                        width: "24px",
+                        height: "24px",
+                        borderRadius: "50%",
+                        background: "rgba(0,0,0,0.6)",
+                        color: "#ffffff",
+                        border: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                        zIndex: 10,
+                      }}
+                      title="Remove image"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={imageConnected}
+                  className="nodrag"
+                  onClick={() => {
+                    if (data.onUploadImageClick) {
+                      data.onUploadImageClick("imageValue");
+                    }
+                  }}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    borderRadius: "8px",
+                    border: imageConnected ? "1px dashed #cbd5e1" : "1px dashed #d1d5db",
+                    background: imageConnected ? "#e2e8f0" : "#f5f5f5",
+                    padding: "10px",
+                    fontSize: "12px",
+                    color: imageConnected ? "#94a3b8" : "#6b7280",
+                    cursor: imageConnected ? "not-allowed" : "pointer",
+                  }}
+                >
+                  <Upload size={14} />
+                  <span>{imageConnected ? "Linked via handle" : "Upload image"}</span>
+                </button>
+              )}
             </div>
             <button
               type="button"
@@ -693,21 +848,48 @@ export function CropImageNode({ id, data, onDelete }: { id: string; data: any; o
             />
           </div>
 
-          <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "6px" }}>Output Image</div>
-          <div
-            style={{
-              borderRadius: "8px",
-              border: "1px solid #e5e7eb",
-              background: "#f5f5f5",
-              minHeight: "84px",
-              padding: "12px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <span style={{ fontSize: "12px", color: "#9ca3af" }}>No output yet</span>
-          </div>
+          {data.outputImage?.url ? (
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                height: "140px",
+                borderRadius: "8px",
+                overflow: "hidden",
+                border: "1px solid #e5e7eb",
+                background: "#000000",
+              }}
+            >
+              <img
+                src={data.outputImage.url}
+                alt="Cropped Output"
+                style={{
+                  position: "absolute",
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  transform: `scale(${100 / Math.max(data.outputImage.crop.width, 1)}, ${100 / Math.max(data.outputImage.crop.height, 1)}) translate(${-data.outputImage.crop.x}%, ${-data.outputImage.crop.y}%)`,
+                  transformOrigin: "top left",
+                }}
+              />
+            </div>
+          ) : (
+            <div
+              style={{
+                borderRadius: "8px",
+                border: "1px solid #e5e7eb",
+                background: "#f5f5f5",
+                minHeight: "84px",
+                width: "100%",
+                padding: "12px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <span style={{ fontSize: "12px", color: "#9ca3af" }}>No output yet</span>
+            </div>
+          )}
         </div>
 
         {/* Cost coins icon footer */}

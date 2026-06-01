@@ -288,37 +288,91 @@ export function RequestInputsNode({ data }: { data: any }) {
                 {/* Input element depending on format */}
                 <div style={{ position: "relative" }}>
                   {isImage ? (
-                    <button
-                      type="button"
-                      className="nodrag"
-                      style={{
-                        width: "100%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "8px",
-                        borderRadius: "8px",
-                        border: "1px dashed #d1d5db",
-                        background: "#f5f5f5",
-                        padding: "10px 12px",
-                        fontSize: "12px",
-                        fontWeight: 500,
-                        color: "#6b7280",
-                        cursor: "pointer",
-                        transition: "all 0.15s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = "#e5e7eb";
-                        e.currentTarget.style.borderColor = "#9ca3af";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = "#f5f5f5";
-                        e.currentTarget.style.borderColor = "#d1d5db";
-                      }}
-                    >
-                      <Upload size={14} />
-                      <span>Upload Image</span>
-                    </button>
+                    field.value ? (
+                      <div
+                        className="nodrag"
+                        style={{
+                          position: "relative",
+                          width: "100%",
+                          borderRadius: "8px",
+                          overflow: "hidden",
+                          border: "1px solid #e5e7eb",
+                        }}
+                      >
+                        <img
+                          src={field.value}
+                          alt="Uploaded Input"
+                          style={{
+                            width: "100%",
+                            height: "auto",
+                            display: "block",
+                            maxHeight: "150px",
+                            objectFit: "cover",
+                          }}
+                        />
+                        {/* Remove Image overlay button */}
+                        <button
+                          type="button"
+                          onClick={() => handleFieldChange(field.id, "value", "")}
+                          style={{
+                            position: "absolute",
+                            top: "8px",
+                            right: "8px",
+                            width: "24px",
+                            height: "24px",
+                            borderRadius: "50%",
+                            background: "rgba(0,0,0,0.6)",
+                            color: "#ffffff",
+                            border: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                          }}
+                          title="Remove image"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="nodrag"
+                        onClick={() => {
+                          if (data.onUploadImageClick) {
+                            data.onUploadImageClick(field.id);
+                          }
+                        }}
+                        style={{
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "8px",
+                          borderRadius: "8px",
+                          border: "1px dashed #d1d5db",
+                          background: "#f5f5f5",
+                          padding: "10px 12px",
+                          fontSize: "12px",
+                          fontWeight: 500,
+                          color: "#6b7280",
+                          cursor: "pointer",
+                          transition: "all 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "#e5e7eb";
+                          e.currentTarget.style.borderColor = "#9ca3af";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "#f5f5f5";
+                          e.currentTarget.style.borderColor = "#d1d5db";
+                        }}
+                      >
+                        <Upload size={14} />
+                        <span>Upload Image</span>
+                      </button>
+                    )
                   ) : (
                     <div style={{ position: "relative" }}>
                       <textarea
