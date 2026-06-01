@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, ChangeEvent } from "react";
 import { Plus, Search, Upload, Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -67,6 +67,45 @@ export default function HomePage() {
     }
   };
 
+  // 3. Interactive JSON Import Handler
+  const handleImportJSON = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string);
+        if (data.nodes && Array.isArray(data.nodes)) {
+          const name = data.name ? `${data.name} (Imported)` : "Imported Workflow";
+          
+          const response = await fetch("/api/workflows", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name,
+              nodes: data.nodes,
+              edges: data.edges || [],
+            }),
+          });
+
+          if (response.ok) {
+            const newWorkflow = await response.json();
+            router.push(`/workflow/${newWorkflow.id}`);
+          } else {
+            alert("Failed to import workflow. Please check formatting.");
+          }
+        } else {
+          alert("Invalid workflow JSON format. Missing 'nodes' array.");
+        }
+      } catch (err) {
+        console.error("Failed to parse imported JSON:", err);
+        alert("Error reading JSON file.");
+      }
+    };
+    reader.readAsText(file);
+  };
+
   // Pre-built static featured template as described in sample workflows specs
   const featuredWorkflow = {
     id: "wf-template-marketing",
@@ -100,7 +139,8 @@ export default function HomePage() {
             </div>
 
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-              <button
+              {/* Import Button */}
+              <label
                 style={{
                   display: "inline-flex",
                   height: 36,
@@ -117,22 +157,28 @@ export default function HomePage() {
                 }}
               >
                 <Upload size={16} />
-                Import
-              </button>
+                <span>Import</span>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleImportJSON}
+                  style={{ display: "none" }}
+                />
+              </label>
+
+              {/* Square Black Plus Button */}
               <button
                 onClick={handleCreateWorkflow}
                 disabled={creating}
                 style={{
                   display: "inline-flex",
+                  width: 36,
                   height: 36,
                   alignItems: "center",
-                  gap: 8,
+                  justifyContent: "center",
                   borderRadius: 8,
                   border: 0,
                   background: "#111827",
-                  padding: "0 12px",
-                  fontSize: 14,
-                  fontWeight: 500,
                   color: "#ffffff",
                   cursor: creating ? "not-allowed" : "pointer",
                   opacity: creating ? 0.8 : 1,
@@ -145,7 +191,6 @@ export default function HomePage() {
                 ) : (
                   <Plus size={16} />
                 )}
-                <span>New workflow</span>
               </button>
             </div>
           </div>
