@@ -10,12 +10,16 @@ import {
   addEdge,
   useReactFlow,
   useViewport,
+  BaseEdge,
+  EdgeLabelRenderer,
+  getBezierPath,
   type Edge,
   type Node,
   type Connection,
+  type EdgeProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { ArrowLeft, Play, Loader2, Save, Cloud, Check, Undo2, Redo2, Download, Upload, History, Calculator, Wallet, Map, Minimize2, ChevronLeft, ChevronRight, Command, ZoomOut, ZoomIn, Maximize2, LayoutGrid, Move } from "lucide-react";
+import { ArrowLeft, Play, Loader2, Save, Cloud, Check, Undo2, Redo2, Download, Upload, History, Calculator, Wallet, Map, Minimize2, ChevronLeft, ChevronRight, Command, ZoomOut, ZoomIn, Maximize2, LayoutGrid, Move, X } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useMemo, useEffect, useState } from "react";
@@ -203,7 +207,13 @@ export default function WorkflowCanvasPage() {
           
           // Populate canvas states
           if (data.nodes) setNodes(data.nodes);
-          if (data.edges) setEdges(data.edges);
+          if (data.edges) {
+            const mappedEdges = data.edges.map((edge: any) => ({
+              ...edge,
+              type: "button",
+            }));
+            setEdges(mappedEdges);
+          }
         } else {
           router.push("/");
         }
@@ -460,6 +470,7 @@ export default function WorkflowCanvasPage() {
       const newEdge: Edge = {
         ...connection,
         id: `edge-${Date.now()}`,
+        type: "button",
         style: { stroke: strokeColor, strokeWidth: 2.5 },
       };
 
@@ -529,6 +540,11 @@ export default function WorkflowCanvasPage() {
     response: ResponseNode,
     gemini: GeminiNode,
     cropImage: CropImageNode,
+  };
+
+  // Register custom edge templates
+  const edgeTypes = {
+    button: ButtonEdge,
   };
 
   if (loading) {
@@ -737,6 +753,7 @@ export default function WorkflowCanvasPage() {
               isValidConnection={isValidConnection}
               onNodeDragStart={onNodeDragStart}
               nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
               fitView={false}
               defaultViewport={{ x: 100, y: 80, zoom: 0.58 }}
               minZoom={0.2}
@@ -1337,5 +1354,136 @@ function CustomCanvasControls({
         <Move size={15} />
       </button>
     </div>
+  );
+}
+
+// Custom interactive Bezier connection edge showing dynamic delete button on hover
+function ButtonEdge({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  style = {},
+  markerEnd,
+  interactionWidth = 20,
+}: EdgeProps & { interactionWidth?: number }) {
+  const [edgePath, labelX, labelY] = getBezierPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+  });
+
+  const [isHovered, setIsHovered] = useState(false);
+  const [isTooltipHovered, setIsTooltipHovered] = useState(false);
+  const { setEdges } = useReactFlow();
+
+  const onEdgeClick = (evt: React.MouseEvent) => {
+    evt.stopPropagation();
+    setEdges((edges) => edges.filter((edge) => edge.id !== id));
+  };
+
+  return (
+    <g
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        setIsTooltipHovered(false);
+      }}
+    >
+      {/* Invisible thick path to increase the hover detection surface area */}
+      <path
+        d={edgePath}
+        fill="none"
+        stroke="transparent"
+        strokeWidth={interactionWidth}
+        style={{ cursor: "pointer" }}
+      />
+      {/* Visual wire path */}
+      <BaseEdge
+        path={edgePath}
+        markerEnd={markerEnd}
+        style={{
+          ...style,
+          strokeWidth: isHovered ? 3.5 : style.strokeWidth || 2.5,
+          transition: "stroke-width 0.15s ease",
+        }}
+      />
+      
+      {/* Red cross disconnect button positioned at the exact mid-point of the Bezier path */}
+      {isHovered && (
+        <EdgeLabelRenderer>
+          <div
+            style={{
+              position: "absolute",
+              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+              pointerEvents: "all",
+              zIndex: 1000,
+            }}
+            className="nodrag nopan"
+          >
+            <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+              <button
+                type="button"
+                onClick={onEdgeClick}
+                onMouseEnter={() => setIsTooltipHovered(true)}
+                onMouseLeave={() => setIsTooltipHovered(false)}
+                style={{
+                  width: "18px",
+                  height: "18px",
+                  borderRadius: "50%",
+                  background: "#ef4444", // Magica high-contrast red cross button
+                  border: "1.5px solid #ffffff",
+                  color: "#ffffff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+                  padding: 0,
+                  transition: "transform 0.1s ease, background 0.1s ease",
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = "scale(1.12)";
+                  e.currentTarget.style.background = "#dc2626";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                  e.currentTarget.style.background = "#ef4444";
+                }}
+              >
+                <X size={10} strokeWidth={3.5} />
+              </button>
+              
+              {/* Tooltip text: 'Delete connection' */}
+              {isTooltipHovered && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: "24px",
+                    whiteSpace: "nowrap",
+                    background: "#0f172a",
+                    color: "#ffffff",
+                    fontSize: "9px",
+                    fontWeight: 500,
+                    padding: "3px 7px",
+                    borderRadius: "4px",
+                    boxShadow: "0 2px 5px rgba(0,0,0,0.15)",
+                    pointerEvents: "none",
+                  }}
+                >
+                  Delete connection
+                </div>
+              )}
+            </div>
+          </div>
+        </EdgeLabelRenderer>
+      )}
+    </g>
   );
 }
