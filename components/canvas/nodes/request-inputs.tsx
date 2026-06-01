@@ -1,10 +1,12 @@
 "use client";
 
 import { Handle, Position } from "@xyflow/react";
-import { Info, Plus, GripVertical, Trash2, FileText, Image as ImageIcon } from "lucide-react";
+import { Info, Plus, GripVertical, Trash2, Copy, Upload, Maximize2 } from "lucide-react";
+import { useState } from "react";
 
 export function RequestInputsNode({ data }: { data: any }) {
   const fields = data.fields || [];
+  const [showAddMenu, setShowAddMenu] = useState(false);
 
   const handleFieldChange = (fieldId: string, key: "name" | "value" | "type", value: string) => {
     if (!data.onChange) return;
@@ -17,14 +19,27 @@ export function RequestInputsNode({ data }: { data: any }) {
     data.onChange({ fields: updatedFields });
   };
 
-  const handleAddField = () => {
+  const handleAddField = (type: "text_field" | "image_field") => {
+    if (!data.onChange) return;
+    const newId = `field-${Date.now()}`;
+    const count = fields.filter((f: any) => f.type === type).length + 1;
+    const newField = {
+      id: newId,
+      type: type,
+      name: type === "text_field" ? `text_input_${count}` : `image_input_${count}`,
+      value: "",
+    };
+    data.onChange({ fields: [...fields, newField] });
+    setShowAddMenu(false);
+  };
+
+  const handleFieldDuplicate = (field: any) => {
     if (!data.onChange) return;
     const newId = `field-${Date.now()}`;
     const newField = {
+      ...field,
       id: newId,
-      type: "text_field",
-      name: `input_${fields.length + 1}`,
-      value: "",
+      name: `${field.name}_copy`,
     };
     data.onChange({ fields: [...fields, newField] });
   };
@@ -47,7 +62,7 @@ export function RequestInputsNode({ data }: { data: any }) {
         width: "380px",
         transition: "all 0.3s ease-in-out",
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        overflow: "visible", // crucial for absolute handle offset
+        overflow: "visible",
         position: "relative",
       }}
     >
@@ -68,33 +83,97 @@ export function RequestInputsNode({ data }: { data: any }) {
           </span>
           <Info size={14} style={{ color: "#9ca3af", cursor: "pointer" }} />
         </div>
-        <button
-          type="button"
-          onClick={handleAddField}
-          className="nodrag"
-          style={{
-            background: "#f5f5f5",
-            border: "1px solid #e5e7eb",
-            borderRadius: "8px",
-            width: "32px",
-            height: "32px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#4f46e5",
-            cursor: "pointer",
-            transition: "background 0.15s ease",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "#e5e7eb")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "#f5f5f5")}
-          title="Add Input Parameter"
-        >
-          <Plus size={16} />
-        </button>
+        <div style={{ position: "relative" }}>
+          <button
+            type="button"
+            onClick={() => setShowAddMenu(!showAddMenu)}
+            className="nodrag"
+            style={{
+              background: "#f5f5f5",
+              border: "1px solid #e5e7eb",
+              borderRadius: "8px",
+              width: "32px",
+              height: "32px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#6b7280",
+              cursor: "pointer",
+              transition: "background 0.15s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#e5e7eb")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "#f5f5f5")}
+            title="Add Input Parameter"
+          >
+            <Plus size={16} />
+          </button>
+          
+          {showAddMenu && (
+            <div
+              className="nodrag"
+              style={{
+                position: "absolute",
+                top: "38px",
+                right: 0,
+                background: "#ffffff",
+                border: "1px solid #e5e7eb",
+                borderRadius: "8px",
+                boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                zIndex: 999,
+                padding: "4px",
+                width: "140px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "2px",
+              }}
+            >
+              <button
+                onClick={() => handleAddField("text_field")}
+                type="button"
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  background: "none",
+                  border: 0,
+                  borderRadius: "6px",
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  color: "#374151",
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#f3f4f6")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+              >
+                Text Input
+              </button>
+              <button
+                onClick={() => handleAddField("image_field")}
+                type="button"
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  background: "none",
+                  border: 0,
+                  borderRadius: "6px",
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  color: "#374151",
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#f3f4f6")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+              >
+                Image Input
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Node Body */}
-      <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "16px" }}>
+      <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "20px" }}>
         {fields.length === 0 ? (
           <div
             style={{
@@ -109,7 +188,7 @@ export function RequestInputsNode({ data }: { data: any }) {
             No parameters defined yet. Click + to add.
           </div>
         ) : (
-          fields.map((field: any, index: number) => {
+          fields.map((field: any) => {
             const isImage = field.type === "image_field";
             return (
               <div
@@ -117,66 +196,72 @@ export function RequestInputsNode({ data }: { data: any }) {
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  gap: "6px",
-                  padding: "12px",
-                  background: "#f8fafc",
-                  borderRadius: "8px",
-                  border: "1px solid #e2e8f0",
-                  position: "relative", // crucial for holding absolute handle
+                  gap: "8px",
                 }}
               >
                 {/* Field Controls Header */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px", flex: 1 }}>
-                    <GripVertical size={14} style={{ color: "#94a3b8", cursor: "grab" }} />
+                    <GripVertical size={14} style={{ color: "#94a3b8", cursor: "grab", flexShrink: 0 }} />
                     <input
                       type="text"
                       className="nodrag"
                       value={field.name}
                       onChange={(e) => handleFieldChange(field.id, "name", e.target.value)}
                       style={{
-                        fontSize: "12px",
-                        fontWeight: 600,
-                        color: "#334155",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        color: "#374151",
                         background: "transparent",
                         border: "1px solid transparent",
                         borderRadius: "4px",
                         outline: "none",
-                        width: "120px",
+                        width: "140px",
                         padding: "2px 4px",
+                        fontFamily: "inherit",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = "#e5e7eb";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (document.activeElement !== e.currentTarget) {
+                          e.currentTarget.style.borderColor = "transparent";
+                        }
                       }}
                       onFocus={(e) => {
-                        e.target.style.background = "#ffffff";
-                        e.target.style.borderColor = "#cbd5e1";
+                        e.currentTarget.style.background = "#ffffff";
+                        e.currentTarget.style.borderColor = "#cbd5e1";
                       }}
                       onBlur={(e) => {
-                        e.target.style.background = "transparent";
-                        e.target.style.borderColor = "transparent";
+                        e.currentTarget.style.background = "transparent";
+                        e.currentTarget.style.borderColor = "transparent";
                       }}
                     />
-                    
-                    {/* Format Switcher */}
-                    <select
-                      className="nodrag"
-                      value={field.type}
-                      onChange={(e) => handleFieldChange(field.id, "type", e.target.value)}
-                      style={{
-                        fontSize: "10px",
-                        color: "#64748b",
-                        border: "1px solid #e2e8f0",
-                        borderRadius: "4px",
-                        padding: "1px 4px",
-                        background: "#ffffff",
-                        outline: "none",
-                      }}
-                    >
-                      <option value="text_field">Text</option>
-                      <option value="image_field">Image</option>
-                    </select>
+                    <Info size={13} style={{ color: "#cbd5e1", cursor: "pointer", flexShrink: 0 }} />
                   </div>
 
-                  {/* Action row */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  {/* Actions (Duplicate/Copy & Delete) */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
+                    <button
+                      type="button"
+                      className="nodrag"
+                      onClick={() => handleFieldDuplicate(field)}
+                      style={{
+                        background: "none",
+                        border: 0,
+                        color: "#9ca3af",
+                        cursor: "pointer",
+                        padding: "2px",
+                        display: "flex",
+                        alignItems: "center",
+                        transition: "color 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "#4b5563")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "#9ca3af")}
+                      title="Duplicate Field"
+                    >
+                      <Copy size={14} />
+                    </button>
                     <button
                       type="button"
                       className="nodrag"
@@ -184,94 +269,122 @@ export function RequestInputsNode({ data }: { data: any }) {
                       style={{
                         background: "none",
                         border: 0,
-                        color: "#ef4444",
+                        color: "#9ca3af",
                         cursor: "pointer",
                         padding: "2px",
                         display: "flex",
                         alignItems: "center",
+                        transition: "color 0.15s ease",
                       }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "#ef4444")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "#9ca3af")}
                       title="Delete parameter"
                     >
-                      <Trash2 size={13} />
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
 
                 {/* Input element depending on format */}
-                <div style={{ display: "flex", flexDirection: "column" }}>
+                <div style={{ position: "relative" }}>
                   {isImage ? (
-                    <div
+                    <button
+                      type="button"
                       className="nodrag"
                       style={{
-                        border: "1px dashed #cbd5e1",
-                        borderRadius: "6px",
-                        background: "#ffffff",
-                        padding: "10px",
+                        width: "100%",
                         display: "flex",
-                        flexDirection: "column",
                         alignItems: "center",
-                        gap: "6px",
+                        justifyContent: "center",
+                        gap: "8px",
+                        borderRadius: "8px",
+                        border: "1px dashed #d1d5db",
+                        background: "#f5f5f5",
+                        padding: "10px 12px",
+                        fontSize: "12px",
+                        fontWeight: 500,
+                        color: "#6b7280",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "#e5e7eb";
+                        e.currentTarget.style.borderColor = "#9ca3af";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "#f5f5f5";
+                        e.currentTarget.style.borderColor = "#d1d5db";
                       }}
                     >
-                      <ImageIcon size={18} style={{ color: "#94a3b8" }} />
-                      <input
-                        type="text"
-                        placeholder="Paste image URL..."
+                      <Upload size={14} />
+                      <span>Upload Image</span>
+                    </button>
+                  ) : (
+                    <div style={{ position: "relative" }}>
+                      <textarea
                         value={field.value}
                         onChange={(e) => handleFieldChange(field.id, "value", e.target.value)}
+                        placeholder="Enter text..."
+                        rows={3}
+                        className="nodrag nowheel"
                         style={{
                           width: "100%",
-                          fontSize: "11px",
+                          borderRadius: "8px",
                           border: "1px solid #e2e8f0",
-                          borderRadius: "4px",
-                          padding: "4px 8px",
+                          background: "#f5f5f5",
+                          padding: "12px",
+                          fontSize: "14px",
+                          color: "#111827",
                           outline: "none",
+                          resize: "vertical",
+                          fontFamily: "inherit",
                         }}
                       />
+                      <button
+                        type="button"
+                        className="nodrag"
+                        style={{
+                          position: "absolute",
+                          bottom: "8px",
+                          right: "8px",
+                          width: "24px",
+                          height: "24px",
+                          background: "rgba(229, 231, 235, 0.8)",
+                          border: 0,
+                          borderRadius: "6px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#6b7280",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <Maximize2 size={12} />
+                      </button>
                     </div>
-                  ) : (
-                    <textarea
-                      value={field.value}
-                      onChange={(e) => handleFieldChange(field.id, "value", e.target.value)}
-                      placeholder="Enter value..."
-                      rows={3}
-                      className="nodrag nowheel"
+                  )}
+
+                  {/* Output source Handle offset absolutely right by -22px */}
+                  <div style={{ position: "absolute", right: "-22px", top: "50%", transform: "translateY(-50%)", zIndex: 50 }}>
+                    <Handle
+                      type="source"
+                      position={Position.Right}
+                      id={field.id}
                       style={{
-                        width: "100%",
-                        borderRadius: "6px",
-                        border: "1px solid #e2e8f0",
-                        background: "#ffffff",
-                        padding: "8px",
-                        fontSize: "12px",
-                        color: "#334155",
-                        outline: "none",
-                        resize: "vertical",
-                        fontFamily: "inherit",
+                        width: "14px",
+                        height: "14px",
+                        borderRadius: "50%",
+                        background: isImage ? "#3b82f6" : "#f59e0b",
+                        border: `2px solid ${isImage ? "rgba(59, 130, 246, 0.5)" : "rgba(245, 158, 11, 0.5)"}`,
+                        boxShadow: `0 0 8px ${isImage ? "rgba(59, 130, 246, 0.3)" : "rgba(245, 158, 11, 0.3)"}`,
+                        cursor: "crosshair",
+                        position: "relative",
+                        right: 0,
+                        top: 0,
+                        transform: "none",
                       }}
                     />
-                  )}
-                </div>
-
-                {/* Output source Handle offset absolutely right by -22px */}
-                <div style={{ position: "absolute", right: "-22px", top: "50%", transform: "translateY(-50%)", zIndex: 50 }}>
-                  <Handle
-                    type="source"
-                    position={Position.Right}
-                    id={field.id}
-                    style={{
-                      width: "14px",
-                      height: "14px",
-                      borderRadius: "50%",
-                      background: isImage ? "#3b82f6" : "#f59e0b",
-                      border: `2px solid ${isImage ? "rgba(59, 130, 246, 0.5)" : "rgba(245, 158, 11, 0.5)"}`,
-                      boxShadow: `0 0 8px ${isImage ? "rgba(59, 130, 246, 0.3)" : "rgba(245, 158, 11, 0.3)"}`,
-                      cursor: "crosshair",
-                      position: "relative",
-                      right: 0,
-                      top: 0,
-                      transform: "none",
-                    }}
-                  />
+                  </div>
                 </div>
               </div>
             );
