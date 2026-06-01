@@ -9,7 +9,7 @@ Built on a robust Next.js serverless framework and dynamic React Flow layout can
 ## Submission Links
 
 *   **Live Demo URL:** [https://nextflow-one-pi.vercel.app](https://nextflow-one-pi.vercel.app)
-*   **Walkthrough & Demo Video (3-5 min):** [Google Drive Walkthrough](https://drive.google.com/file/d/1Arun1eGecyj95KcQ0_WYoRthiDIDlxdU/view?usp=drivesdk)
+*   **Walkthrough & Demo Video:** [Google Drive Walkthrough](https://drive.google.com/file/d/1Arun1eGecyj95KcQ0_WYoRthiDIDlxdU/view?usp=drivesdk)
 *   **Private GitHub Repo:** [https://github.com/100hard/nextflow](https://github.com/100hard/nextflow) *(Access granted to: `bluerocketinfo@gmail.com`)*
 
 ---
