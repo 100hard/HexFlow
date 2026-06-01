@@ -69,8 +69,8 @@ export default function HomePage() {
 
   // Pre-built static featured template as described in sample workflows specs
   const featuredWorkflow = {
-    id: "wf-template-racing",
-    name: "AI Racing Car Generator (Sample Template)",
+    id: "wf-template-marketing",
+    name: "AI Marketing Copy Generator (Sample Template)",
     updatedAt: "System Template",
     featured: true,
   };
@@ -178,44 +178,69 @@ export default function HomePage() {
                   style={{
                     position: "relative",
                     aspectRatio: "5 / 3",
-                    background:
-                      "linear-gradient(180deg, rgba(255,199,138,0.78) 0%, rgba(255,231,197,0.1) 18%, rgba(0,0,0,0) 28%), radial-gradient(120% 95% at 80% 8%, rgba(255,214,168,0.92), rgba(255,214,168,0) 32%), linear-gradient(180deg, #48515e 0%, #2e3745 32%, #202632 100%)",
+                    background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    overflow: "hidden",
                   }}
                 >
+                  {/* Glowing background halo */}
                   <div
                     style={{
                       position: "absolute",
-                      left: -22,
-                      right: -14,
-                      bottom: 28,
-                      height: 64,
-                      borderTop: "3px solid rgba(255,255,255,0.86)",
+                      width: "120px",
+                      height: "120px",
                       borderRadius: "999px",
-                      transform: "rotate(-13deg)",
+                      background: "radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(99, 102, 241, 0) 70%)",
+                      filter: "blur(8px)",
                     }}
                   />
-                  <div
+                  
+                  {/* Minimalist modern Headphones SVG */}
+                  <svg
+                    width="64"
+                    height="64"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="url(#headphone-gradient)"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                     style={{
-                      position: "absolute",
-                      left: 78,
-                      right: 44,
-                      bottom: 14,
-                      height: 34,
-                      background: "linear-gradient(180deg, rgba(70,130,255,0.98), rgba(0,95,221,0.98))",
-                      borderRadius: "34px 34px 18px 20px",
-                      transform: "skewX(-15deg)",
+                      filter: "drop-shadow(0 4px 12px rgba(99, 102, 241, 0.4))",
+                      zIndex: 2,
                     }}
-                  />
+                  >
+                    <defs>
+                      <linearGradient id="headphone-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#c084fc" />
+                        <stop offset="50%" stopColor="#818cf8" />
+                        <stop offset="100%" stopColor="#6366f1" />
+                      </linearGradient>
+                    </defs>
+                    {/* Headband arc */}
+                    <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+                    {/* Left Muff */}
+                    <rect x="2" y="12" width="3" height="6" rx="1.5" fill="#818cf8" stroke="none" />
+                    <rect x="2" y="12" width="3" height="6" rx="1.5" />
+                    {/* Right Muff */}
+                    <rect x="19" y="12" width="3" height="6" rx="1.5" fill="#818cf8" stroke="none" />
+                    <rect x="19" y="12" width="3" height="6" rx="1.5" />
+                    {/* Audio wave dynamic particles */}
+                    <path d="M9 13v-2" stroke="#a78bfa" strokeWidth="1" />
+                    <path d="M12 15V9" stroke="#818cf8" strokeWidth="1" />
+                    <path d="M15 13v-2" stroke="#a78bfa" strokeWidth="1" />
+                  </svg>
+
+                  {/* Soft neon overlay grid lines */}
                   <div
                     style={{
                       position: "absolute",
-                      left: 101,
-                      bottom: 10,
-                      width: 30,
-                      height: 30,
-                      borderRadius: "999px",
-                      background: "#14171d",
-                      boxShadow: "126px 0 0 #14171d",
+                      inset: 0,
+                      backgroundImage: "radial-gradient(rgba(99, 102, 241, 0.15) 1px, transparent 1px)",
+                      backgroundSize: "16px 16px",
+                      opacity: 0.7,
                     }}
                   />
                 </div>

@@ -168,12 +168,12 @@ export default function WorkflowCanvasPage() {
   useEffect(() => {
     const loadWorkflow = async () => {
       // Auto-clone logic for featured sample template
-      if (id === "wf-template-racing") {
+      if (id === "wf-template-marketing") {
         try {
           const createRes = await fetch("/api/workflows", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: "AI Racing Car Generator (Cloned)" }),
+            body: JSON.stringify({ name: "AI Marketing Copy Generator (Cloned)" }),
           });
 
           if (createRes.ok) {
@@ -217,7 +217,7 @@ export default function WorkflowCanvasPage() {
 
   // 2. Debounced Database Auto-Saving Logic
   const saveWorkflowState = useCallback(async (currentNodes: Node[], currentEdges: Edge[]) => {
-    if (loading || id === "wf-template-racing") return;
+    if (loading || id === "wf-template-marketing") return;
     setSavingState("saving");
 
     try {
@@ -244,7 +244,7 @@ export default function WorkflowCanvasPage() {
 
   // Fetch historical runs from PostgreSQL database
   const fetchRuns = useCallback(async () => {
-    if (!id || id === "wf-template-racing") return;
+    if (!id || id === "wf-template-marketing") return;
     try {
       const res = await fetch(`/api/workflows/${id}/runs`);
       if (res.ok) {
@@ -257,7 +257,7 @@ export default function WorkflowCanvasPage() {
   }, [id]);
 
   useEffect(() => {
-    if (id && id !== "wf-template-racing") {
+    if (id && id !== "wf-template-marketing") {
       fetchRuns();
     }
   }, [id, fetchRuns]);
