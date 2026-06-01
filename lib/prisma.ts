@@ -13,7 +13,6 @@ function createPrismaClient() {
 
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
-    // Return a dummy client if URL is not loaded (e.g. during early static phases)
     return new PrismaClient();
   }
 
@@ -25,7 +24,11 @@ function createPrismaClient() {
   });
 
   const adapter = new PrismaPg(pool);
-  return new PrismaClient({ adapter });
+
+  return new PrismaClient({
+    adapter,
+    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+  });
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
