@@ -1,102 +1,144 @@
-# NextFlow 
+# HexFlow
 
-**NextFlow** is an interactive workflow canvas and automation dashboard inspired by the architecture of platforms the Platform *Galaxy.ai*. 
+A visual creative workflow layer for HexCoded.
 
-Built on a robust Next.js serverless framework and dynamic React Flow layout canvas, it enables developers and creators to design, configure, execute, and monitor complex AI pipeline graphs seamlessly.
+HexFlow explores how creative work could become easier to change, branch and iterate on without rebuilding everything from scratch.
 
----
+**Live prototype:** https://hex-flow-lemon.vercel.app/
 
-## Submission Links
-
-*   **Live Demo URL:** [https://nextflow-one-pi.vercel.app](https://nextflow-one-pi.vercel.app)
-*   **Walkthrough & Demo Video:** [Google Drive Walkthrough](https://drive.google.com/file/d/1Arun1eGecyj95KcQ0_WYoRthiDIDlxdU/view?usp=drivesdk)
-*   **Private GitHub Repo:** [https://github.com/100hard/nextflow](https://github.com/100hard/nextflow) *(Access granted to: `bluerocketinfo@gmail.com`)*
+**Product case study:** [https://app.notion.com/p/sauhard1912/HexFlow-3d94a91adc258051bf46c4e13e0bc0cd?source=copy_link]
 
 ---
 
-## Features & Capabilities
+## The idea
 
-### 1. User Authentication & Guardrails
-*   **Full Session Integration:** Secure access paths protected using **Clerk Middleware** on all dashboard endpoints and workspace routes.
-*   **Seamless Auth Lifecycles:** Elegant custom login, session token validation, and account state syncing.
+HexCoded makes it easy to go from an idea to finished content by handling much of the technical complexity.
 
-### 2. Interactive Workspace Canvas & Building Blocks
-*   **Dynamic Custom Nodes:** Drag, connect, configure, and execute four granular node architectures:
-    *   **Request-Inputs:** Dynamic input parameters (e.g. `image_field`) for execution ingestion.
-    *   **Crop Image:** Aspect-ratio adjustments and crop operations.
-    *   **Gemini 3.1 Pro:** Rich text and multiline LLM generative prompt processors.
-    *   **Response:** Final execution output hubs.
-*   **Micro-Animations & Visual State Indicators:** Pulse animations, glow outlines, run loaders, and glowing transition lines dynamically highlight current canvas execution routes.
+But creative work is rarely linear.
 
-### 3. Transloadit Image Upload Integration
-*   **Zero-Delay Local Uploads:** Interactive file-select handlers built directly inside the `Request-Inputs` node interface, supporting image file previews and immediate file system synchronization.
+After seeing a result, I might want to change the actor, try a different hook, or explore another visual setting while keeping the rest of the work intact.
 
-### 4. Advanced Graph Execution Schemes
-*   **End-to-End Run:** Pulses connection paths and schedules node outputs in logical execution order.
-*   **Single-Node Run:** Granular, isolated play execution triggering from inside individual nodes (with full loaders and active state highlights).
-*   **Multi-Select Run:** Execute specific subsets of connected node graphs.
+HexFlow makes those creative decisions visible as a workflow and tracks what actually needs to change.
 
-### 5. Detailed Run History & Auditing
-*   **Granular Trace Audit logs:** The slide-out history panel lists all historical executions, scoped beautifully by **`FULL`**, **`SINGLE`**, or **`PARTIAL`** runs.
-*   **Expandable Diagnostics:** Expand execution traces to inspect parameters, connection values, runtimes, and exact inputs/outputs.
-
-### 6. Portability (JSON Export & Import)
-*   **Dynamic Workspaces:** Export canvas workflows to lightweight, structured JSON files.
-*   **Configuration Hydration:** Import files to instantly recreate the entire canvas configuration, complete with custom node titles, parameters, coordinates, and edge bounds.
+> **Change one creative decision. Regenerate only what depends on it.**
 
 ---
 
-## Architecture & Tech Stack
+## What HexFlow explores
 
-*   **Frontend Framework:** Next.js 15 (App Router, Webpack engine)
-*   **Interactive Canvas:** `@xyflow/react` (React Flow layout controller)
-*   **Database:** Neon PostgreSQL (Serverless database connection)
-*   **ORM Layer:** Prisma 7.8.0 (Modern type-safe schema compilation)
-*   **Identity Services:** Clerk Auth Core (`@clerk/nextjs`)
-*   **Styling & Motion:** TailwindCSS, CSS Variables, micro-animations
-*   **Icons Framework:** Lucide React
+### Creative workflows
 
----
+Nodes represent meaningful creative decisions and steps rather than individual AI models or technical operations.
 
-## How to Run Locally
+For example:
 
-### 1. Clone the repository
-```bash
-git clone https://github.com/100hard/nextflow.git
-cd nextflow
-```
+`Product → Hook → Script → Actor + Setting → Video`
 
-### 2. Install Dependencies
-```bash
-npm install
-```
+This makes the parts of the creative process that a user might want to change directly visible and editable.
 
-### 3. Configure Local Environment Variables
-Create a `.env.local` or `.env` file in the project's root:
-```env
-GEMINI_API_KEY=YOUR_GEMINI_API_KEY
-DATABASE_URL=YOUR_NEON_POSTGRESQL_CONNECTION_STRING
-DIRECT_URL=YOUR_NEON_POSTGRESQL_DIRECT_CONNECTION_STRING
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=YOUR_CLERK_PUBLISHABLE_KEY
-CLERK_SECRET_KEY=YOUR_CLERK_SECRET_KEY
-```
+### Selective regeneration
 
-### 4. Initialize Database Client
-Generate the type-safe client schemas locally:
-```bash
-npx prisma generate
-```
+HexFlow tracks dependencies between nodes.
 
-### 5. Launch Development Server
-```bash
-npm run dev
-```
-Open `http://localhost:3001` (or your terminal's active dev port) in your browser!
+If the actor changes, the video becomes stale while the script remains intact.
+
+If a hook changes, the affected script and downstream video become stale.
+
+Running the workflow brings only the affected work up to date instead of regenerating everything.
+
+### Branching and exploration
+
+Creative ideas often need to be explored in parallel.
+
+A single product can branch into different hooks, scripts or visual directions while keeping each version independent.
+
+### Agentic workflow editing
+
+The canvas can also be controlled through natural language.
+
+For example:
+
+> "Create two UGC concepts with different hooks."
+
+or:
+
+> "Change the second hook to Before / After."
+
+The agent translates the request into changes on the canvas while keeping the resulting workflow visible and editable.
+
+**Agent for intent. Canvas for structure and control.**
 
 ---
 
-## Build Validation
-This project is configured to run `prisma generate` before Next.js compiles, making it fully deployment-ready. The build executes flawlessly with exit status `0`:
-```bash
-npm run build
-```
+## Prototype examples
+
+### 01 / CHANGE
+
+**Swap the actor, keep the creative.**
+
+Change the actor and only the affected downstream work becomes stale.
+
+### 02 / EXPLORE
+
+**Which hook works better?**
+
+Branch from the same product and explore different creative directions without losing either version.
+
+### 03 / ITERATE
+
+**Same idea. Two visual worlds.**
+
+Keep the same voice and message while exploring different aesthetic settings.
+
+---
+
+## What is actually implemented
+
+The prototype includes a functional workflow engine with:
+
+- Typed node connections
+- Dependency tracking
+- DAG execution
+- Topological ordering
+- Cycle detection
+- Stale state propagation
+- Selective execution
+- Content-based state comparison
+- Workflow persistence
+- Run history
+- Undo and redo
+- Natural language workflow creation and modification
+- Multiple prototype workflows
+
+The workflow engine preserves valid results and only reruns work whose inputs or configuration have changed.
+
+---
+
+## Prototype limitations
+
+The actual AI generation and video rendering are simulated in this prototype.
+
+The goal was to explore the product direction, workflow interaction model and dependency behaviour rather than reproduce HexCoded's generation infrastructure.
+
+There is also significant room to improve the implementation before this could become a production system. The prototype is intended to demonstrate the direction and core interaction model.
+
+---
+
+## Built with
+
+**Next.js · React · TypeScript · React Flow**
+
+---
+
+## Background
+
+HexFlow was built by extending a workflow engine I had previously developed and applying it to the creative workflow problem explored here.
+
+The earlier foundation provided the canvas, workflow execution and state management needed to explore the new product direction.
+
+---
+
+
+> If a creator wants to change one part of AI-generated content, why should they have to start over?
+
+HexFlow is an exploration of what happens when the creative process itself becomes visible, editable and aware of its dependencies.
