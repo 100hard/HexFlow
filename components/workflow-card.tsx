@@ -186,125 +186,73 @@ export function WorkflowCard({ workflow, onRefresh }: WorkflowCardProps) {
             textDecoration: "none",
           }}
         >
-          {workflow.name.toLowerCase().includes("marketing") || workflow.name.toLowerCase().includes("copy") ? (
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                overflow: "hidden",
-              }}
-            >
-              {/* Glowing background halo */}
-              <div
-                style={{
-                  position: "absolute",
-                  width: "100px",
-                  height: "100px",
-                  borderRadius: "999px",
-                  background: "radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(99, 102, 241, 0) 70%)",
-                  filter: "blur(8px)",
-                }}
-              />
-              
-              {/* Minimalist modern Headphones SVG */}
-              <svg
-                width="48"
-                height="48"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="url(#headphone-gradient-card)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{
-                  filter: "drop-shadow(0 4px 12px rgba(99, 102, 241, 0.4))",
-                  zIndex: 2,
-                }}
-              >
-                <defs>
-                  <linearGradient id="headphone-gradient-card" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#c084fc" />
-                    <stop offset="50%" stopColor="#818cf8" />
-                    <stop offset="100%" stopColor="#6366f1" />
-                  </linearGradient>
-                </defs>
-                {/* Headband arc */}
-                <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
-                {/* Left Muff */}
-                <rect x="2" y="12" width="3" height="6" rx="1.5" fill="#818cf8" stroke="none" />
-                <rect x="2" y="12" width="3" height="6" rx="1.5" />
-                {/* Right Muff */}
-                <rect x="19" y="12" width="3" height="6" rx="1.5" fill="#818cf8" stroke="none" />
-                <rect x="19" y="12" width="3" height="6" rx="1.5" />
-                {/* Audio wave dynamic particles */}
-                <path d="M9 13v-2" stroke="#a78bfa" strokeWidth="1" />
-                <path d="M12 15V9" stroke="#818cf8" strokeWidth="1" />
-                <path d="M15 13v-2" stroke="#a78bfa" strokeWidth="1" />
-              </svg>
+          {(() => {
+            const nameLower = workflow.name.toLowerCase();
+            let productImage = "/products/nike-shoe.jpg";
+            let productBadge = "Nike Pegasus";
 
-              {/* Soft neon overlay grid lines */}
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  backgroundImage: "radial-gradient(rgba(99, 102, 241, 0.15) 1px, transparent 1px)",
-                  backgroundSize: "14px 14px",
-                  opacity: 0.7,
-                }}
-              />
-            </div>
-          ) : (
-            <>
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background:
-                    "linear-gradient(180deg, rgba(255,199,138,0.78) 0%, rgba(255,231,197,0.1) 18%, rgba(0,0,0,0) 28%), radial-gradient(120% 95% at 80% 8%, rgba(255,214,168,0.92), rgba(255,214,168,0) 32%), linear-gradient(180deg, #48515e 0%, #2e3745 32%, #202632 100%)",
-                }}
-              />
-              <div
-                style={{
-                  position: "absolute",
-                  left: -18,
-                  right: -10,
-                  bottom: 28,
-                  height: 52,
-                  borderTop: "2px solid rgba(255,255,255,0.85)",
-                  borderRadius: 999,
-                  transform: "rotate(-13deg)",
-                }}
-              />
-              <div
-                style={{
-                  position: "absolute",
-                  left: 52,
-                  right: 40,
-                  bottom: 13,
-                  height: 28,
-                  background: "linear-gradient(180deg, rgba(70,130,255,0.98), rgba(0,95,221,0.98))",
-                  borderRadius: "30px 30px 16px 18px",
-                  transform: "skewX(-15deg)",
-                }}
-              />
-              <div
-                style={{
-                  position: "absolute",
-                  left: 72,
-                  bottom: 9,
-                  width: 24,
-                  height: 24,
-                  borderRadius: 999,
-                  background: "#14171d",
-                  boxShadow: "98px 0 0 #14171d",
-                }}
-              />
-            </>
-          )}
+            if (nameLower.includes("headphone") || nameLower.includes("audio") || nameLower.includes("sound") || nameLower.includes("copy") || nameLower.includes("marketing")) {
+              productImage = "/products/headphones.jpg";
+              productBadge = "Audio Gear";
+            } else if (nameLower.includes("nike") || nameLower.includes("shoe") || nameLower.includes("sneaker") || nameLower.includes("ugc") || nameLower.includes("pipeline")) {
+              productImage = "/products/nike-shoe.jpg";
+              productBadge = "Nike Footwear";
+            }
+
+            return (
+              <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden", background: "#0f172a" }}>
+                <img
+                  src={productImage}
+                  alt={workflow.name}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+                    transform: hovered ? "scale(1.08)" : "scale(1)",
+                  }}
+                />
+                {/* Subtle studio gradient overlay */}
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: "linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.1) 40%, rgba(15,23,42,0.7) 100%)",
+                    pointerEvents: "none",
+                  }}
+                />
+                {/* Bottom product category badge */}
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: 8,
+                    left: 8,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    zIndex: 2,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: "#ffffff",
+                      background: "rgba(0, 0, 0, 0.6)",
+                      backdropFilter: "blur(6px)",
+                      padding: "2px 8px",
+                      borderRadius: 4,
+                      letterSpacing: "0.04em",
+                      textTransform: "uppercase",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                    }}
+                  >
+                    {productBadge}
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
         </Link>
       </div>
 

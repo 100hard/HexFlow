@@ -1,7 +1,21 @@
 "use client";
 
 import { useEffect, useState, ChangeEvent } from "react";
-import { Plus, Search, Upload, Loader2, Sparkles } from "lucide-react";
+import { 
+  Plus, 
+  Search, 
+  Upload, 
+  Loader2, 
+  Sparkles, 
+  Link as LinkIcon, 
+  Sliders, 
+  Mic, 
+  Palette, 
+  HelpCircle, 
+  Moon, 
+  ArrowRight,
+  Play
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -14,6 +28,65 @@ type Workflow = {
   updatedAt: string;
   featured?: boolean;
 };
+
+const templatePreviews = [
+  {
+    id: "ugc",
+    title: "UGC",
+    caption: "“Commute upgraded.”",
+    bgGradient: "linear-gradient(180deg, #1e293b 0%, #0f172a 100%)",
+    accent: "#38bdf8",
+    iconName: "Earbuds Commute",
+  },
+  {
+    id: "review",
+    title: "Review",
+    caption: "“Honestly couldn't go back.”",
+    bgGradient: "linear-gradient(180deg, #334155 0%, #1e293b 100%)",
+    accent: "#a855f7",
+    iconName: "Tech Desk",
+  },
+  {
+    id: "unboxing",
+    title: "Unboxing",
+    caption: "“First look, real reaction.”",
+    bgGradient: "linear-gradient(180deg, #475569 0%, #1e293b 100%)",
+    accent: "#f43f5e",
+    iconName: "Jewelry Box",
+  },
+  {
+    id: "before_after",
+    title: "Before / After",
+    caption: "“See the glow.”",
+    bgGradient: "linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%)",
+    accent: "#ec4899",
+    iconName: "Skincare Glow",
+  },
+  {
+    id: "problem_solution",
+    title: "Problem → Solution",
+    caption: "“Set up in minutes.”",
+    bgGradient: "linear-gradient(180deg, #1e293b 0%, #0f172a 100%)",
+    accent: "#10b981",
+    iconName: "Home Workspace",
+  },
+  {
+    id: "cinematic",
+    title: "Product cinematic",
+    caption: "“Delicate. Deliberate.”",
+    bgGradient: "linear-gradient(180deg, #451a03 0%, #1c1917 100%)",
+    accent: "#f59e0b",
+    iconName: "Gold Luxury",
+  },
+  {
+    id: "asmr",
+    title: "ASMR",
+    caption: "“Lights every evening.”",
+    bgGradient: "linear-gradient(180deg, #292524 0%, #0c0a09 100%)",
+    accent: "#fbbf24",
+    iconName: "Candle Warmth",
+  },
+];
 
 export default function HomePage() {
   const router = useRouter();
@@ -50,12 +123,11 @@ export default function HomePage() {
       const response = await fetch("/api/workflows", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: "AI racing car generator clone" }),
+        body: JSON.stringify({ name: "HexFlow Creative Pipeline" }),
       });
 
       if (response.ok) {
         const newWorkflow = await response.json();
-        // Automatically open the new workflow canvas!
         router.push(`/workflow/${newWorkflow.id}`);
       } else {
         alert("Failed to create workflow. Please check your session.");
@@ -106,276 +178,625 @@ export default function HomePage() {
     reader.readAsText(file);
   };
 
-  // Pre-built static featured template as described in sample workflows specs
-  const featuredWorkflow = {
-    id: "wf-template-marketing",
-    name: "AI Marketing Copy Generator (Sample Template)",
-    updatedAt: "System Template",
-    featured: true,
-  };
-
-  // Filter dynamic database workflows based on search query
+  // Filter dynamic workflows based on search query
   const filteredWorkflows = workflowsList.filter((workflow) =>
     workflow.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <div style={{ minHeight: "100vh", background: "#ffffff" }}>
-      {/* Premium top accent brand line */}
-      <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 3, background: "#eb1f26", zIndex: 40 }} />
+    <div style={{ minHeight: "100vh", background: "#ffffff", fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       <AppSidebar />
 
-      <main style={{ minHeight: "100vh", paddingLeft: 261 }}>
-        <section style={{ width: "100%", maxWidth: 1152, margin: "0 auto", padding: "24px 16px 32px" }}>
-          {/* Header Dashboard section */}
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
-            <div>
-              <h1 style={{ margin: 0, fontSize: 24, lineHeight: "32px", fontWeight: 600, color: "#111111" }}>
-                Flow
-              </h1>
-              <p style={{ margin: "4px 0 0", fontSize: 14, lineHeight: "20px", color: "#6b7280" }}>
-                Build workflows or run models directly.
-              </p>
+      {/* Main Content Area */}
+      <div style={{ paddingLeft: 240, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+        
+        {/* Top Header Bar matching HexCoded exactly */}
+        <header
+          style={{
+            height: 58,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            padding: "0 32px",
+            background: "#ffffff",
+            borderBottom: "1px solid #f8fafc",
+            gap: 16,
+          }}
+        >
+          {/* Workspace badge */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: "50%",
+                background: "#16a34a",
+                color: "#ffffff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 12,
+                fontWeight: 700,
+              }}
+            >
+              S
             </div>
+            <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.15 }}>
+              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", color: "#94a3b8", textTransform: "uppercase" }}>
+                Brand
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>
+                Sauhard&apos;s Workspace
+              </span>
+            </div>
+          </div>
 
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-              {/* Import Button */}
-              <label
+          {/* Subscribe Button */}
+          <button
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              height: 32,
+              padding: "0 14px",
+              borderRadius: 9999,
+              border: "1px solid #bbf7d0",
+              background: "#f0fdf4",
+              color: "#16a34a",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+            className="hover:bg-emerald-100"
+          >
+            <span>✦</span>
+            <span>Subscribe</span>
+          </button>
+
+          {/* Dark mode toggle */}
+          <button
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              border: "1px solid #e2e8f0",
+              background: "#ffffff",
+              color: "#64748b",
+              cursor: "pointer",
+            }}
+            title="Toggle theme"
+          >
+            <Moon size={15} />
+          </button>
+        </header>
+
+        {/* Interior Container */}
+        <main style={{ flex: 1, padding: "28px 40px 48px", maxWidth: 1280, width: "100%", margin: "0 auto", boxSizing: "border-box" }}>
+          
+          {/* 1. Authentic HexCoded Hero Card with Mint Wash */}
+          <section
+            style={{
+              position: "relative",
+              borderRadius: 24,
+              background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 55%, #e8f9ed 100%)",
+              border: "1px solid #d1fae5",
+              padding: "44px 48px",
+              overflow: "hidden",
+            }}
+          >
+            <div style={{ maxWidth: 620, position: "relative", zIndex: 2 }}>
+              <h1
+                style={{
+                  margin: 0,
+                  fontSize: 38,
+                  fontWeight: 900,
+                  lineHeight: 1.12,
+                  letterSpacing: "-0.035em",
+                  color: "#0f172a",
+                }}
+              >
+                Turn anything into a <span style={{ color: "#16a34a" }}>scroll-stopping</span> video.
+              </h1>
+
+              <p
+                style={{
+                  margin: "16px 0 24px",
+                  fontSize: 14.5,
+                  lineHeight: 1.55,
+                  color: "#475569",
+                  fontWeight: 450,
+                }}
+              >
+                A product, a service or a place — in minutes. No editing, no technical choices. Tell us what you want and we&apos;ll write it, cast it and make the video for you.
+              </p>
+
+              {/* First cut in ~3 minutes badge */}
+              <div
                 style={{
                   display: "inline-flex",
-                  height: 36,
                   alignItems: "center",
                   gap: 8,
-                  borderRadius: 8,
-                  border: "1px solid #e5e7eb",
-                  background: "#ffffff",
-                  padding: "0 12px",
-                  fontSize: 14,
-                  fontWeight: 400,
-                  color: "rgba(17,24,39,0.8)",
-                  cursor: "pointer",
+                  background: "rgba(255, 255, 255, 0.75)",
+                  backdropFilter: "blur(4px)",
+                  border: "1px solid #86efac",
+                  padding: "6px 14px",
+                  borderRadius: 9999,
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  color: "#15803d",
                 }}
               >
-                <Upload size={16} />
-                <span>Import</span>
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={handleImportJSON}
-                  style={{ display: "none" }}
-                />
-              </label>
+                <span>⚡</span>
+                <span>First cut in ~3 minutes</span>
+              </div>
+            </div>
+          </section>
 
-              {/* Square Black Plus Button */}
-              <button
-                onClick={handleCreateWorkflow}
-                disabled={creating}
+          {/* 2. "What do you want to make?" Section */}
+          <section style={{ marginTop: 36 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
+              <div
                 style={{
-                  display: "inline-flex",
-                  width: 36,
-                  height: 36,
+                  width: 20,
+                  height: 20,
+                  borderRadius: "50%",
+                  background: "#16a34a",
+                  color: "#ffffff",
+                  display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  borderRadius: 8,
-                  border: 0,
-                  background: "#111827",
-                  color: "#ffffff",
-                  cursor: creating ? "not-allowed" : "pointer",
-                  opacity: creating ? 0.8 : 1,
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                  fontSize: 11,
+                  fontWeight: 700,
                 }}
-                aria-label="Create Workflow"
               >
-                {creating ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Plus size={16} />
-                )}
-              </button>
+                ?
+              </div>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#0f172a" }}>
+                What do you want to make?
+              </h2>
             </div>
-          </div>
 
-          {/* System Workflows Segment */}
-          <div style={{ marginTop: 32 }}>
-            <h2 style={{ margin: 0, fontSize: 14, lineHeight: "20px", fontWeight: 600, color: "#111827" }}>System Workflows</h2>
-            <p style={{ margin: "4px 0 0", fontSize: 14, lineHeight: "20px", color: "#6b7280" }}>
-              Pre-built workflow templates — click to open and start using.
-            </p>
-
-            <div style={{ marginTop: 16 }}>
-              <Link
-                href={`/workflow/${featuredWorkflow.id}`}
-                className="hover:-translate-y-0.5 transition-transform duration-150"
+            {/* 4 Action Cards Grid */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
+                gap: 16,
+              }}
+            >
+              {/* Card 1: From a link */}
+              <div
                 style={{
-                  display: "block",
-                  width: 280,
-                  overflow: "hidden",
-                  borderRadius: 12,
-                  border: "1px solid #e5e7eb",
-                  background: "#f5f5f5",
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
-                  textDecoration: "none",
-                  color: "inherit",
+                  background: "#ffffff",
+                  border: "1px solid #f1f5f9",
+                  borderRadius: 16,
+                  padding: "20px 22px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
                   cursor: "pointer",
+                  transition: "all 0.15s ease",
                 }}
+                className="hover:border-emerald-200 hover:shadow-md group"
               >
-                <div
-                  style={{
-                    position: "relative",
-                    aspectRatio: "5 / 3",
-                    background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    overflow: "hidden",
-                  }}
-                >
-                  {/* Glowing background halo */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                   <div
                     style={{
-                      position: "absolute",
-                      width: "120px",
-                      height: "120px",
-                      borderRadius: "999px",
-                      background: "radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(99, 102, 241, 0) 70%)",
-                      filter: "blur(8px)",
-                    }}
-                  />
-                  
-                  {/* Minimalist modern Headphones SVG */}
-                  <svg
-                    width="64"
-                    height="64"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="url(#headphone-gradient)"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    style={{
-                      filter: "drop-shadow(0 4px 12px rgba(99, 102, 241, 0.4))",
-                      zIndex: 2,
+                      width: 36,
+                      height: 36,
+                      borderRadius: 10,
+                      background: "#16a34a",
+                      color: "#ffffff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
                   >
-                    <defs>
-                      <linearGradient id="headphone-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#c084fc" />
-                        <stop offset="50%" stopColor="#818cf8" />
-                        <stop offset="100%" stopColor="#6366f1" />
-                      </linearGradient>
-                    </defs>
-                    {/* Headband arc */}
-                    <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
-                    {/* Left Muff */}
-                    <rect x="2" y="12" width="3" height="6" rx="1.5" fill="#818cf8" stroke="none" />
-                    <rect x="2" y="12" width="3" height="6" rx="1.5" />
-                    {/* Right Muff */}
-                    <rect x="19" y="12" width="3" height="6" rx="1.5" fill="#818cf8" stroke="none" />
-                    <rect x="19" y="12" width="3" height="6" rx="1.5" />
-                    {/* Audio wave dynamic particles */}
-                    <path d="M9 13v-2" stroke="#a78bfa" strokeWidth="1" />
-                    <path d="M12 15V9" stroke="#818cf8" strokeWidth="1" />
-                    <path d="M15 13v-2" stroke="#a78bfa" strokeWidth="1" />
-                  </svg>
-
-                  {/* Soft neon overlay grid lines */}
-                  <div
+                    <LinkIcon size={18} />
+                  </div>
+                  <span
                     style={{
-                      position: "absolute",
-                      inset: 0,
-                      backgroundImage: "radial-gradient(rgba(99, 102, 241, 0.15) 1px, transparent 1px)",
-                      backgroundSize: "16px 16px",
-                      opacity: 0.7,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: "0.06em",
+                      background: "#dcfce7",
+                      color: "#15803d",
+                      padding: "2px 8px",
+                      borderRadius: 4,
+                      textTransform: "uppercase",
                     }}
-                  />
+                  >
+                    FASTEST
+                  </span>
                 </div>
-                <div style={{ padding: 16, fontSize: 14, lineHeight: "20px", fontWeight: 500, color: "#111827", display: "flex", alignItems: "center", gap: 6 }}>
-                  <Sparkles size={14} className="text-amber-500" />
-                  <span>{featuredWorkflow.name}</span>
-                </div>
-              </Link>
-            </div>
-          </div>
-
-          {/* User Workflows Segment */}
-          <div style={{ marginTop: 40 }}>
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
-              <div>
-                <h2 style={{ margin: 0, fontSize: 14, lineHeight: "20px", fontWeight: 600, color: "#111827" }}>Your Workflows</h2>
-                <p style={{ margin: "4px 0 0", fontSize: 14, lineHeight: "20px", color: "#6b7280" }}>
-                  Open one to edit, run, and review history.
+                <h3 style={{ margin: "0 0 6px", fontSize: 14.5, fontWeight: 700, color: "#0f172a" }}>
+                  From a link
+                </h3>
+                <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.45, color: "#64748b" }}>
+                  Paste your product, service or place — we make the ad.
                 </p>
               </div>
 
-              {/* Live search input filter */}
-              <div style={{ position: "relative", width: 208 }}>
-                <Search
-                  size={14}
+              {/* Card 2: Marketing Studio */}
+              <div
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #f1f5f9",
+                  borderRadius: 16,
+                  padding: "20px 22px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+                className="hover:border-emerald-200 hover:shadow-md group"
+              >
+                <div style={{ marginBottom: 16 }}>
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 10,
+                      background: "#16a34a",
+                      color: "#ffffff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Sliders size={18} />
+                  </div>
+                </div>
+                <h3 style={{ margin: "0 0 6px", fontSize: 14.5, fontWeight: 700, color: "#0f172a" }}>
+                  Marketing Studio
+                </h3>
+                <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.45, color: "#64748b" }}>
+                  Describe it in words — we write it, cast it and make it.
+                </p>
+              </div>
+
+              {/* Card 3: Talking head */}
+              <div
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #f1f5f9",
+                  borderRadius: 16,
+                  padding: "20px 22px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+                className="hover:border-emerald-200 hover:shadow-md group"
+              >
+                <div style={{ marginBottom: 16 }}>
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 10,
+                      background: "#16a34a",
+                      color: "#ffffff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Mic size={18} />
+                  </div>
+                </div>
+                <h3 style={{ margin: "0 0 6px", fontSize: 14.5, fontWeight: 700, color: "#0f172a" }}>
+                  Talking head
+                </h3>
+                <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.45, color: "#64748b" }}>
+                  A real face says your script — yours or from the library.
+                </p>
+              </div>
+
+              {/* Card 4: HexFlow Visual Node Pipeline */}
+              <Link
+                href="/workflows"
+                style={{
+                  display: "block",
+                  textDecoration: "none",
+                  background: "#ffffff",
+                  border: "1px solid #f1f5f9",
+                  borderRadius: 16,
+                  padding: "20px 22px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+                className="hover:border-emerald-300 hover:shadow-md group"
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 10,
+                      background: "#16a34a",
+                      color: "#ffffff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Palette size={18} />
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: "0.06em",
+                      background: "#dcfce7",
+                      color: "#15803d",
+                      padding: "2px 8px",
+                      borderRadius: 4,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    PRO STUDIO
+                  </span>
+                </div>
+                <h3 style={{ margin: "0 0 6px", fontSize: 14.5, fontWeight: 700, color: "#0f172a" }}>
+                  HexFlow
+                </h3>
+                <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.45, color: "#64748b" }}>
+                  Pick a model — generate images and video, your way with node DAGs.
+                </p>
+              </Link>
+            </div>
+          </section>
+
+          {/* 3. "START WITH A TEMPLATE" Section */}
+          <section style={{ marginTop: 44 }}>
+            <div style={{ marginBottom: 16 }}>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.08em",
+                  color: "#94a3b8",
+                  textTransform: "uppercase",
+                }}
+              >
+                Start with a template
+              </span>
+            </div>
+
+            {/* Horizontal Scrolling Video Reel Previews */}
+            <div
+              style={{
+                display: "flex",
+                gap: 16,
+                overflowX: "auto",
+                paddingBottom: 12,
+                scrollSnapType: "x mandatory",
+              }}
+              className="no-scrollbar"
+            >
+              {templatePreviews.map((template) => (
+                <Link
+                  key={template.id}
+                  href="/workflow/demo-canonical-flow"
                   style={{
-                    pointerEvents: "none",
-                    position: "absolute",
-                    left: 10,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    color: "#6b7280",
+                    flex: "0 0 160px",
+                    scrollSnapAlign: "start",
+                    textDecoration: "none",
+                    borderRadius: 16,
+                    overflow: "hidden",
+                    border: "1px solid #f1f5f9",
+                    background: "#0f172a",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                    transition: "transform 0.15s ease",
                   }}
-                />
-                <input
-                  type="text"
-                  placeholder="Search workflows..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="hover:-translate-y-1"
+                >
+                  <div
+                    style={{
+                      aspectRatio: "9 / 16",
+                      position: "relative",
+                      background: template.bgGradient,
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "flex-end",
+                      padding: "16px 14px",
+                    }}
+                  >
+                    {/* Play hover pill */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 12,
+                        right: 12,
+                        width: 28,
+                        height: 28,
+                        borderRadius: "50%",
+                        background: "rgba(0,0,0,0.4)",
+                        backdropFilter: "blur(6px)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#ffffff",
+                      }}
+                    >
+                      <Play size={12} fill="#ffffff" />
+                    </div>
+
+                    {/* Bottom label */}
+                    <div style={{ position: "relative", zIndex: 2 }}>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: "#ffffff",
+                          background: "rgba(255,255,255,0.2)",
+                          backdropFilter: "blur(6px)",
+                          padding: "3px 8px",
+                          borderRadius: 6,
+                          display: "inline-block",
+                          marginBottom: 6,
+                        }}
+                      >
+                        {template.title}
+                      </span>
+                      <p style={{ margin: 0, fontSize: 11.5, color: "#cbd5e1", lineHeight: 1.35, fontWeight: 500 }}>
+                        {template.caption}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          {/* 4. "YOUR WORKFLOWS & CREATIVE PIPELINES" Section */}
+          <section style={{ marginTop: 48, paddingTop: 36, borderTop: "1px solid #f1f5f9" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#0f172a" }}>
+                  Your Workflows &amp; Pipelines
+                </h2>
+                <p style={{ margin: "4px 0 0", fontSize: 13, color: "#64748b" }}>
+                  Nonlinear node DAGs — change any prompt or seed without starting over.
+                </p>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {/* Search */}
+                <div style={{ position: "relative", width: 220 }}>
+                  <Search
+                    size={14}
+                    style={{
+                      position: "absolute",
+                      left: 10,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      color: "#94a3b8",
+                      pointerEvents: "none",
+                    }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Search pipelines..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                      height: 34,
+                      width: "100%",
+                      borderRadius: 8,
+                      border: "1px solid #e2e8f0",
+                      background: "#ffffff",
+                      padding: "0 12px 0 32px",
+                      fontSize: 13,
+                      color: "#0f172a",
+                      outline: "none",
+                    }}
+                  />
+                </div>
+
+                {/* Import JSON */}
+                <label
                   style={{
-                    height: 32,
-                    width: "100%",
+                    display: "inline-flex",
+                    height: 34,
+                    alignItems: "center",
+                    gap: 6,
                     borderRadius: 8,
-                    border: "1px solid #e5e7eb",
+                    border: "1px solid #e2e8f0",
                     background: "#ffffff",
-                    padding: "0 12px 0 32px",
-                    fontSize: 14,
-                    color: "#111827",
-                    outline: "none",
-                    boxSizing: "border-box",
+                    padding: "0 12px",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "#475569",
+                    cursor: "pointer",
                   }}
-                />
+                  className="hover:bg-slate-50"
+                >
+                  <Upload size={14} />
+                  <span>Import</span>
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleImportJSON}
+                    style={{ display: "none" }}
+                  />
+                </label>
+
+                {/* Create Workflow Button */}
+                <button
+                  onClick={handleCreateWorkflow}
+                  disabled={creating}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    height: 34,
+                    padding: "0 16px",
+                    borderRadius: 8,
+                    border: 0,
+                    background: "#16a34a",
+                    color: "#ffffff",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: creating ? "not-allowed" : "pointer",
+                    boxShadow: "0 1px 2px rgba(22, 163, 74, 0.2)",
+                  }}
+                  className="hover:bg-emerald-700"
+                >
+                  {creating ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Plus size={14} strokeWidth={2.5} />
+                  )}
+                  <span>New Workflow</span>
+                </button>
               </div>
             </div>
 
-            {/* Displaying Live Lists or state indicators */}
-            <div style={{ marginTop: 16 }}>
-              {loading ? (
-                <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#6b7280", padding: "24px 0" }}>
-                  <Loader2 size={18} className="animate-spin text-indigo-600" />
-                  <span style={{ fontSize: 14 }}>Connecting to Neon database...</span>
-                </div>
-              ) : filteredWorkflows.length > 0 ? (
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 250px))",
-                    columnGap: 24,
-                    rowGap: 36,
-                  }}
-                >
-                  {filteredWorkflows.map((workflow) => (
-                    <WorkflowCard
-                      key={workflow.id}
-                      workflow={workflow}
-                      onRefresh={fetchWorkflows}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div style={{ padding: "40px 0", textAlign: "center", border: "1px dashed #e5e7eb", borderRadius: 12 }}>
-                  <p style={{ margin: 0, fontSize: 14, color: "#6b7280" }}>
-                    {searchQuery ? "No matching workflows found." : "Create your first workflow to get started!"}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-      </main>
+            {/* Workflow Cards */}
+            {loading ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#64748b", padding: "32px 0" }}>
+                <Loader2 size={18} className="animate-spin text-emerald-600" />
+                <span style={{ fontSize: 13 }}>Loading creative pipelines...</span>
+              </div>
+            ) : filteredWorkflows.length > 0 ? (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 280px))",
+                  gap: 20,
+                }}
+              >
+                {filteredWorkflows.map((workflow) => (
+                  <WorkflowCard
+                    key={workflow.id}
+                    workflow={workflow}
+                    onRefresh={fetchWorkflows}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div
+                style={{
+                  padding: "48px 24px",
+                  textAlign: "center",
+                  border: "1px dashed #e2e8f0",
+                  borderRadius: 16,
+                  background: "#f8fafc",
+                }}
+              >
+                <p style={{ margin: 0, fontSize: 13.5, color: "#64748b" }}>
+                  {searchQuery ? "No matching workflows found." : "Create your first creative workflow pipeline to start generating."}
+                </p>
+              </div>
+            )}
+          </section>
+
+        </main>
+      </div>
     </div>
   );
 }
+

@@ -11,10 +11,7 @@ function createPrismaClient() {
     return null as any;
   }
 
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    return new PrismaClient();
-  }
+  const connectionString = process.env.DATABASE_URL || "postgresql://mock:mock@localhost:5432/mock";
 
   const pool = new Pool({
     connectionString,

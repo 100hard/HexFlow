@@ -1,10 +1,32 @@
+"use client";
+
 import Link from "next/link";
-import { LayoutGrid, Settings2, Workflow } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { 
+  Home, 
+  Folder, 
+  BarChart2, 
+  Bookmark, 
+  Users, 
+  Settings, 
+  Palette, 
+  Sparkles, 
+  Mic 
+} from "lucide-react";
 import type { CSSProperties } from "react";
 
-const navItems = [
-  { label: "Dashboard", href: "/", icon: LayoutGrid, active: false },
-  { label: "Workflows", href: "/", icon: Workflow, active: true },
+const mainNavItems = [
+  { label: "Home", href: "/", icon: Home },
+  { label: "Projects", href: "/", icon: Folder },
+  { label: "Renders", href: "/", icon: BarChart2 },
+  { label: "Library", href: "/", icon: Bookmark },
+  { label: "Actors", href: "/", icon: Users },
+];
+
+const toolNavItems = [
+  { label: "HexFlow", href: "/workflows", icon: Palette },
+  { label: "Marketing Studio", href: "/", icon: Sparkles },
+  { label: "Talking head", href: "/", icon: Mic },
 ];
 
 const sidebarStyle: CSSProperties = {
@@ -12,93 +34,128 @@ const sidebarStyle: CSSProperties = {
   inset: "0 auto 0 0",
   zIndex: 20,
   display: "flex",
-  width: 261,
+  width: 240,
   flexDirection: "column",
-  borderRight: "1px solid rgba(229, 229, 229, 0.5)",
-  background: "#f9f9f9",
+  borderRight: "1px solid #f1f5f9",
+  background: "#ffffff",
+  fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
 };
 
 const navLinkStyle: CSSProperties = {
   display: "flex",
-  height: 38,
+  height: 36,
   alignItems: "center",
   gap: 12,
-  borderRadius: 10,
+  borderRadius: 8,
   padding: "0 12px",
-  fontSize: 14,
-  fontWeight: 400,
-  color: "#6b7280",
+  fontSize: 13,
+  fontWeight: 500,
+  color: "#475569",
   textDecoration: "none",
+  transition: "all 0.15s ease",
 };
 
 const navLinkActiveStyle: CSSProperties = {
-  background: "#e8e8e8",
-  color: "#111111",
+  background: "#dcfce7",
+  color: "#15803d",
+  fontWeight: 600,
 };
 
 export function AppSidebar() {
+  const pathname = usePathname();
+  const isHome = pathname === "/";
+  const isWorkflow = pathname.startsWith("/workflow");
+
   return (
     <aside style={sidebarStyle}>
-      <div style={{ padding: "12px 18px 18px" }}>
+      {/* Brand Header */}
+      <div style={{ padding: "20px 20px 16px" }}>
         <Link href="/" style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}>
-          <div>
-            <p
-              style={{
-                margin: 0,
-                fontSize: 20,
-                fontWeight: 700,
-                letterSpacing: "-0.045em",
-                color: "#111111",
-              }}
-            >
-              NextFlow
-            </p>
-          </div>
+          <span
+            style={{
+              fontSize: 18,
+              fontWeight: 900,
+              letterSpacing: "-0.04em",
+              color: "#0f172a",
+              textTransform: "uppercase",
+            }}
+          >
+            HEXCODED
+          </span>
         </Link>
       </div>
 
-      <nav style={{ flex: "1 1 0%", padding: "0 6px" }}>
-        <div style={{ display: "grid", gap: 3 }}>
-          {navItems.map((item) => {
+      {/* Main Navigation */}
+      <nav style={{ flex: "1 1 0%", padding: "0 10px", display: "flex", flexDirection: "column" }}>
+        <div style={{ display: "grid", gap: 2 }}>
+          {mainNavItems.map((item) => {
             const Icon = item.icon;
+            const active = item.label === "Home" && isHome;
 
             return (
               <Link
                 key={item.label}
                 href={item.href}
-                style={item.active ? { ...navLinkStyle, ...navLinkActiveStyle } : navLinkStyle}
+                style={active ? { ...navLinkStyle, ...navLinkActiveStyle } : navLinkStyle}
+                className={!active ? "hover:bg-slate-50 hover:text-slate-900" : ""}
               >
-                <Icon size={16} strokeWidth={1.8} />
-                {item.label}
+                <Icon size={16} strokeWidth={active ? 2.2 : 1.8} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Tools Section */}
+        <div style={{ marginTop: 24, marginBottom: 8, padding: "0 12px" }}>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              color: "#94a3b8",
+              textTransform: "uppercase",
+            }}
+          >
+            Tools
+          </span>
+        </div>
+
+        <div style={{ display: "grid", gap: 2 }}>
+          {toolNavItems.map((item) => {
+            const Icon = item.icon;
+            const active = item.label === "HexFlow" && isWorkflow;
+
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                style={active ? { ...navLinkStyle, ...navLinkActiveStyle } : navLinkStyle}
+                className={!active ? "hover:bg-slate-50 hover:text-slate-900" : ""}
+              >
+                <Icon size={16} strokeWidth={active ? 2.2 : 1.8} />
+                <span>{item.label}</span>
               </Link>
             );
           })}
         </div>
       </nav>
 
-      <div style={{ padding: "16px 8px 16px" }}>
-        <button
+      {/* Bottom Settings Link */}
+      <div style={{ padding: "16px 12px", borderTop: "1px solid #f8fafc" }}>
+        <Link
+          href="/"
           style={{
-            margin: "0 20px",
-            display: "flex",
-            height: 32,
-            width: "calc(100% - 40px)",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            borderRadius: 9999,
-            border: "1px solid #d1d5db",
-            background: "#ffffff",
-            fontSize: 12,
-            fontWeight: 500,
-            color: "#4b5563",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+            ...navLinkStyle,
+            color: "#64748b",
           }}
+          className="hover:bg-slate-50 hover:text-slate-900"
         >
-          <Settings2 size={16} />
-          Settings
-        </button>
+          <Settings size={16} strokeWidth={1.8} />
+          <span>Settings</span>
+        </Link>
       </div>
     </aside>
   );
 }
+

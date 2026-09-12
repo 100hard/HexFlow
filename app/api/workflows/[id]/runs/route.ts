@@ -1,32 +1,35 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
+import { getSessionUser } from "@/lib/auth-helper";
+import { memoryStore } from "@/lib/hexflow/store";
 
 export const dynamic = "force-dynamic";
 
-// 1. GET /api/workflows/[id]/runs - Fetch history list of execution runs
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const user = await getSessionUser();
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = await params;
 
-    const runs = await prisma.run.findMany({
-      where: {
-        workflowId: id,
-        userId,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    if (process.env.DATABASE_URL) {
+      try {
+        const runs = await prisma.run.findMany({
+          where: { workflowId: id },
+          orderBy: { createdAt: "desc" },
+        });
+        return NextResponse.json(runs);
+      } catch (dbErr) {
+        console.warn("DB find runs failed, falling back to local memory store:", dbErr);
+      }
+    }
 
+    const runs = memoryStore.listRuns(id);
     return NextResponse.json(runs);
   } catch (error: any) {
     console.error("GET Runs Error:", error);
@@ -34,14 +37,13 @@ export async function GET(
   }
 }
 
-// 2. POST /api/workflows/[id]/runs - Save a new execution run to Neon PostgreSQL database
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const user = await getSessionUser();
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -53,26 +55,32 @@ export async function POST(
     const duration = body.duration !== undefined ? Number(body.duration) : 1.25;
     const nodesState = body.nodesState || {};
 
-    // Verify workflow ownership first
-    const workflow = await prisma.workflow.findFirst({
-      where: { id, userId },
-    });
-
-    if (!workflow) {
-      return NextResponse.json({ error: "Workflow not found" }, { status: 404 });
+    if (process.env.DATABASE_URL) {
+      try {
+        const newRun = await prisma.run.create({
+          data: {
+            workflowId: id,
+            userId: user.userId,
+            status,
+            scope,
+            duration,
+            nodesState,
+          },
+        });
+        return NextResponse.json(newRun);
+      } catch (dbErr) {
+        console.warn("DB create run failed, falling back to local memory store:", dbErr);
+      }
     }
 
-    const newRun = await prisma.run.create({
-      data: {
-        workflowId: id,
-        userId,
-        status,
-        scope,
-        duration,
-        nodesState,
-      },
+    const newRun = memoryStore.createRun({
+      workflowId: id,
+      userId: user.userId,
+      status,
+      scope,
+      duration,
+      nodesState,
     });
-
     return NextResponse.json(newRun);
   } catch (error: any) {
     console.error("POST Run Error:", error);

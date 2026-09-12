@@ -1,54 +1,73 @@
 "use client";
 
 import {
-  Clock,
-  Crop,
+  Package,
+  Lightbulb,
   FileText,
+  User,
+  MapPin,
   Image as ImageIcon,
-  Mic,
+  Video,
+  CheckCircle2,
   Plus,
   Search,
-  Sparkles,
-  Video,
   X,
 } from "lucide-react";
 import { useState } from "react";
 
 interface AddNodeBarProps {
-  onAddNode: (type: "gemini" | "cropImage") => void;
+  onAddNode: (type: string) => void;
 }
 
 export function AddNodeBar({ onAddNode }: AddNodeBarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const handleSelect = (type: "gemini" | "cropImage") => {
+  const handleSelect = (type: string) => {
     onAddNode(type);
     setIsOpen(false);
     setSearchQuery("");
   };
 
-  const recentItems = [
-    { id: "cropImage" as const, name: "Crop Image", icon: Crop },
-    { id: "gemini" as const, name: "Gemini 3.1 Pro", icon: Sparkles },
+  const categories = [
+    {
+      name: "CREATIVE",
+      color: "#2563eb",
+      items: [
+        { id: "product", name: "Product", desc: "Product context & specs", icon: Package },
+        { id: "hook", name: "Hook", desc: "Creative opening angle", icon: Lightbulb },
+        { id: "script", name: "Script", desc: "UGC / commercial copy", icon: FileText },
+        { id: "actor", name: "Actor", desc: "AI talent & look selection", icon: User },
+        { id: "setting", name: "Setting", desc: "Environment, lighting, mood", icon: MapPin },
+      ],
+    },
+    {
+      name: "GENERATE",
+      color: "#9333ea",
+      items: [
+        { id: "generateImage", name: "Generate Image", desc: "Visual keyframe producer", icon: ImageIcon },
+        { id: "generateVideo", name: "Generate Video", desc: "Seedance 2.5 video engine", icon: Video },
+      ],
+    },
+    {
+      name: "CONTROL",
+      color: "#16a34a",
+      items: [
+        { id: "review", name: "Review / Select", desc: "Human gatekeeper & approval", icon: CheckCircle2 },
+      ],
+    },
   ];
 
-  const imageItems = [
-    { name: "Generate Image", icon: ImageIcon, expandable: true },
-    { name: "Edit Image", icon: ImageIcon, expandable: true },
-    { name: "3D", icon: ImageIcon, expandable: true },
-  ];
-
-  const videoItems = [
-    { name: "Generate Video", icon: Video, expandable: true },
-    { name: "Enhance Video", icon: Video, expandable: true },
-    { name: "BG Remover", icon: Video, expandable: true },
-  ];
-
-  // Filtering recent items by search query
-  const filteredRecent = recentItems.filter((item) =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCategories = categories
+    .map((cat) => ({
+      ...cat,
+      items: cat.items.filter(
+        (item) =>
+          item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.desc.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+    }))
+    .filter((cat) => cat.items.length > 0);
 
   return (
     <div
@@ -71,10 +90,10 @@ export function AddNodeBar({ onAddNode }: AddNodeBarProps) {
             transform: "translateX(-50%)",
             background: "#ffffff",
             border: "1px solid #e2e8f0",
-            borderRadius: "20px",
-            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-            width: "320px",
-            maxHeight: "440px",
+            borderRadius: "18px",
+            boxShadow: "0 20px 30px -10px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+            width: "340px",
+            maxHeight: "460px",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
@@ -89,22 +108,24 @@ export function AddNodeBar({ onAddNode }: AddNodeBarProps) {
               padding: "12px 16px",
               borderBottom: "1px solid #f1f5f9",
               gap: "8px",
+              background: "#fafafa",
             }}
           >
             <Search size={16} style={{ color: "#64748b" }} />
             <input
               type="text"
-              placeholder="Search nodes or models..."
+              placeholder="Search creative nodes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
                 border: 0,
                 outline: "none",
-                fontSize: "14px",
+                fontSize: "13px",
                 color: "#0f172a",
                 width: "100%",
                 background: "transparent",
               }}
+              autoFocus
             />
             {searchQuery && (
               <button
@@ -121,213 +142,116 @@ export function AddNodeBar({ onAddNode }: AddNodeBarProps) {
             style={{
               flex: 1,
               overflowY: "auto",
-              padding: "8px 0",
-              maxHeight: "360px",
+              padding: "10px 0",
+              maxHeight: "380px",
             }}
           >
-            {/* Recent Section */}
-            {filteredRecent.length > 0 && (
-              <div>
+            {filteredCategories.map((cat) => (
+              <div key={cat.name} style={{ marginBottom: "12px" }}>
                 <div
                   style={{
-                    fontSize: "11px",
+                    fontSize: "10px",
                     fontWeight: 700,
-                    color: "#64748b",
-                    padding: "8px 16px 4px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
+                    letterSpacing: "0.5px",
+                    color: cat.color,
+                    padding: "4px 16px 6px",
                   }}
                 >
-                  <Clock size={12} />
-                  <span>Recent</span>
+                  {cat.name}
                 </div>
-                {filteredRecent.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => handleSelect(item.id)}
-                    style={{
-                      width: "100%",
-                      padding: "10px 16px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      background: "transparent",
-                      border: 0,
-                      cursor: "pointer",
-                      textAlign: "left",
-                      transition: "background 0.15s ease",
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f5f9")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                  >
-                    <item.icon size={16} style={{ color: "#475569" }} />
-                    <span style={{ fontSize: "13px", fontWeight: 500, color: "#0f172a" }}>
-                      {item.name}
-                    </span>
-                  </button>
-                ))}
+                {cat.items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleSelect(item.id)}
+                      style={{
+                        width: "100%",
+                        padding: "8px 16px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        background: "transparent",
+                        border: 0,
+                        cursor: "pointer",
+                        textAlign: "left",
+                        transition: "background 0.12s ease",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                    >
+                      <div
+                        style={{
+                          width: "32px",
+                          height: "32px",
+                          borderRadius: "8px",
+                          background: "#f1f5f9",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#475569",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Icon size={16} />
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+                        <span style={{ fontSize: "13px", fontWeight: 600, color: "#0f172a" }}>
+                          {item.name}
+                        </span>
+                        <span style={{ fontSize: "11px", color: "#64748b" }}>
+                          {item.desc}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
-            )}
-
-            {/* Image Section */}
-            {searchQuery === "" && (
-              <div>
-                <div
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    color: "#64748b",
-                    padding: "12px 16px 4px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                  }}
-                >
-                  <ImageIcon size={12} />
-                  <span>IMAGE</span>
-                </div>
-                {imageItems.map((item, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      width: "100%",
-                      padding: "10px 16px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      cursor: "not-allowed",
-                      opacity: 0.6,
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <item.icon size={16} style={{ color: "#94a3b8" }} />
-                      <span style={{ fontSize: "13px", fontWeight: 500, color: "#475569" }}>
-                        {item.name}
-                      </span>
-                    </div>
-                    <span style={{ fontSize: "11px", color: "#94a3b8" }}>&gt;</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Video Section */}
-            {searchQuery === "" && (
-              <div>
-                <div
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    color: "#64748b",
-                    padding: "12px 16px 4px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                  }}
-                >
-                  <Video size={12} />
-                  <span>VIDEO</span>
-                </div>
-                {videoItems.map((item, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      width: "100%",
-                      padding: "10px 16px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      cursor: "not-allowed",
-                      opacity: 0.6,
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <item.icon size={16} style={{ color: "#94a3b8" }} />
-                      <span style={{ fontSize: "13px", fontWeight: 500, color: "#475569" }}>
-                        {item.name}
-                      </span>
-                    </div>
-                    <span style={{ fontSize: "11px", color: "#94a3b8" }}>&gt;</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Audio Section */}
-            {searchQuery === "" && (
-              <div>
-                <div
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    color: "#64748b",
-                    padding: "12px 16px 4px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                  }}
-                >
-                  <Mic size={12} />
-                  <span>AUDIO</span>
-                </div>
-              </div>
-            )}
+            ))}
           </div>
         </div>
       )}
 
-      {/* Bottom Visual Trigger Bar matching [ Page-Icon | + ] exactly */}
+      {/* Bottom Visual Trigger Bar */}
       <div
         style={{
           background: "#ffffff",
           border: "1px solid #e2e8f0",
           borderRadius: "14px",
           padding: "6px 8px",
-          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)",
+          boxShadow: "0 10px 20px -5px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
           display: "flex",
           alignItems: "center",
           gap: "8px",
         }}
       >
-        {/* Document Icon button */}
-        <button
-          style={{
-            background: "none",
-            border: 0,
-            color: "#64748b",
-            width: "36px",
-            height: "36px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "not-allowed",
-            borderRadius: "10px",
-          }}
-          title="Documents"
-        >
-          <FileText size={20} />
-        </button>
-
-        {/* Plus Button */}
         <button
           onClick={() => setIsOpen(!isOpen)}
           style={{
-            background: isOpen ? "#0f172a" : "#f1f5f9",
-            color: isOpen ? "#ffffff" : "#0f172a",
-            border: 0,
-            width: "36px",
-            height: "36px",
-            borderRadius: "10px",
-            display: "flex",
+            display: "inline-flex",
             alignItems: "center",
-            justifyContent: "center",
+            gap: "8px",
+            background: isOpen ? "#0f172a" : "#4f46e5",
+            color: "#ffffff",
+            border: 0,
+            padding: "8px 16px",
+            borderRadius: "10px",
+            fontSize: "13px",
+            fontWeight: 600,
             cursor: "pointer",
-            transition: "all 0.2s ease",
+            transition: "all 0.15s ease",
+            boxShadow: "0 2px 4px rgba(79, 70, 229, 0.2)",
           }}
-          title="Add node"
+          title="Add creative node"
         >
-          <Plus size={20} style={{ transform: isOpen ? "rotate(45deg)" : "none", transition: "transform 0.2s ease" }} />
+          <Plus
+            size={16}
+            style={{
+              transform: isOpen ? "rotate(45deg)" : "none",
+              transition: "transform 0.2s ease",
+            }}
+          />
+          <span>Add Node</span>
         </button>
       </div>
 
