@@ -137,8 +137,51 @@ HexFlow was built by extending a workflow engine I had previously developed and 
 The earlier foundation provided the canvas, workflow execution and state management needed to explore the new product direction.
 
 ---
+## Running locally
 
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/100hard/HexFlow.git
+cd HexFlow
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Configure environment variables
+
+Create a `.env` file with the required environment variables.
+
+```env
+OPENAI_API_KEY=your_key_here
+```
+
+### 4. Start the development server
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000)
+
+### 5. Build for production
+
+```bash
+npm run build
+```
+
+---
+
+## Why I built this
+
+This prototype started from a simple question:
 
 > If a creator wants to change one part of AI-generated content, why should they have to start over?
 
 HexFlow is an exploration of what happens when the creative process itself becomes visible, editable and aware of its dependencies.
+
+
